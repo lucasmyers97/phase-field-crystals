@@ -1,0 +1,27 @@
+\documentclass[reqno]{article}
+\usepackage{../format_doc}
+
+\begin{document}
+\title{Hexagonal phase field lattice}
+\author{Lucas Myers}
+\maketitle
+
+\section{Hexagonal lattice phase-field and free energy}
+To begin, we create a scalar phase field $\psi$, which roughly corresponds to a time-average of the mass-density of atoms in the lattice.
+Hence, we would like to write down a form which has mass concentrated in a hexagonal lattice pattern.
+This looks like:
+\begin{equation}
+    \psi(\mathbf{r})
+    =
+    \psi_0
+    +
+    \sum_n A_0 e^{i \, \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation}
+with $\psi_0$ some constant, $A_0$ an amplitude, and each $\mathbf{q}_n$ a lattice vector, given by:
+\begin{equation}
+    \mathbf{q}_1 = \hat{\mathbf{y}}, \hspace{0.5cm}
+    \mathbf{q}_2 = \tfrac{\sqrt{3}}{2} \hat{\mathbf{x}} - \tfrac12 \hat{\mathbf{y}}, \hspace{0.5cm}
+    \mathbf{q}_3 = -\tfrac{\sqrt{3}}{2} \hat{\mathbf{x}} - \tfrac12 \hat{\mathbf{y}}
+\end{equation}
+
+\end{document}
