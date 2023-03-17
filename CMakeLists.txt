@@ -32,3 +32,5 @@ if(NOT TARGET deal.II::Interface)
 endif()
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_subdirectory(src)
