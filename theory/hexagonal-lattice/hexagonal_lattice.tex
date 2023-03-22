@@ -23,5 +23,454 @@ with $\psi_0$ some constant, $A_0$ an amplitude, and each $\mathbf{q}_n$ a latti
     \mathbf{q}_2 = \tfrac{\sqrt{3}}{2} \hat{\mathbf{x}} - \tfrac12 \hat{\mathbf{y}}, \hspace{0.5cm}
     \mathbf{q}_3 = -\tfrac{\sqrt{3}}{2} \hat{\mathbf{x}} - \tfrac12 \hat{\mathbf{y}}
 \end{equation}
+We will use this as an initial configuration to make sure that we can create a stable configuration and iterate it in time.
+
+The free energy corresponding to a hexagonal lattice is given by:
+\begin{equation}
+    \mathcal{F}[\psi]
+    =
+    \int_\Omega \left[
+    \frac12 \left[ \left(\nabla^2 + 1\right) \psi \right]^2
+    + \frac{\epsilon}{2} \psi^2
+    + \frac14 \psi^4
+    \right] dV
+\end{equation}
+where, if $\epsilon > 0$ the only stable solution is $\psi = \psi_0$, whereas $\epsilon < 0$ admits periodic solutions which we are interested in.
+Given this free energy, the corresponding time evolution is given by:
+\begin{equation}
+    \frac{\partial \psi}{\partial t}
+    =
+    \nabla^2 \frac{\delta F}{\delta \psi}
+\end{equation}
+Writing this out explicitly gives:
+\begin{equation}
+\begin{split}
+    \frac{\partial \psi}{\partial t}
+    &=
+    \nabla^2 \left[\left(\nabla^2 + 1\right)^2 \psi
+    + \epsilon \psi
+    + \psi^3
+    \right] \\
+    &=
+    \nabla^2 \left(\nabla^2 + 1 \right)^2 \psi
+    + \epsilon \nabla^2 \psi
+    + \nabla^2 \psi^3
+\end{split}
+\end{equation}
+
+\section{Finite element method}
+To begin, we expand the equation as much as possible:
+\begin{equation}
+    \begin{split}
+        \frac{\partial \psi}{\partial t}
+        &=
+        \nabla^6 \psi
+        + 2 \nabla^4 \psi
+        + \left(1 + \epsilon \right) \nabla^2 \psi
+        + \nabla^2 \psi^3 \\
+        &=
+        \nabla^6 \psi
+        + 2 \nabla^4 \psi
+        + \left(1 + \epsilon \right) \nabla^2 \psi
+        + 3 \psi^2 \nabla^2 \psi
+        + 6 \psi \left( \nabla \psi \right)^2
+    \end{split}
+\end{equation}
+For technical reasons associated with the use of piecewise polynomials for the finite element method, we choose to define the following auxiliary variables:
+\begin{equation}
+    \chi \coloneqq \nabla^2 \psi, \hspace{0.3cm}
+    \phi \coloneqq \nabla^2 \chi = \nabla^4 \psi
+\end{equation}
+Substituting these auxiliary variables into our original equations yields:
+\begin{equation}
+    \begin{split}
+        \frac{\partial \psi}{\partial t}
+        =
+        \nabla^2 \phi
+        + 2 \phi
+        + \left(1 + \epsilon \right) \chi
+        + 3 \psi^2 \chi
+        + 6 \psi \left(\nabla \psi \right)^2
+    \end{split}
+\end{equation}
+Then we have three coupled second-order equations.
+
+\subsection{Time discretization}
+We may solve this equation numerically using the finite element method.
+To begin, we discretize in time.
+For this, we use a semi-implicit method parameterized by $\theta$ as in \href{https://www.dealii.org/current/doxygen/deal.II/step_23.html}{step 23 of the deal.II tutorials}.
+This gives:
+\begin{equation} \label{time-discretization}
+    \frac{\psi_n - \psi_{n - 1}}{\delta t}
+    =
+    \begin{multlined}[t]
+    \theta \left[
+        \nabla^2 \phi_n
+        + 2 \phi_n
+        + \left(1 + \epsilon + 3 \psi_n^2 \right) \chi_n
+        + 6 \psi_n \left(\nabla \psi_n \right)^2
+    \right] \\
+    + \left(1 - \theta \right) \left[
+        \nabla^2 \phi_{n - 1}
+        + 2 \phi_{n - 1}
+        + \left(1 + \epsilon + 3 \psi_{n - 1}^2 \right) \chi_{n - 1}
+        + 6 \psi_n \left(\nabla \psi_{n - 1} \right)^2
+    \right]
+    \end{multlined}
+\end{equation}
+Here $\delta t$ is the discrete timestep and $\theta$ is the discretization parameter: $\theta = 1$ corresponds to a fully-implicit method, $\theta = 0$ is a fully explicit method, and $\theta = 1/2$ is a Crank-Nicolson method.
+Of course, the definitions of the auxiliary variables still hold for timestep $n$ and $n - 1$.
+
+\subsection{Linearizing the equation}
+Given that the equation is nonlinear, we must use Newton-Rhapson method to solve for each timestep.
+Because we have a series of three coupled equations, the residual is a three-component function defined at every point.
+The components are then given by:
+\begin{equation}
+    \begin{split}
+        R_1(\psi_n, \chi_n, \phi_n)
+        &=
+        \begin{multlined}[t]
+        \psi_n
+        - \delta t \, \theta \left[
+            \nabla^2 \phi_n
+            + 2 \phi_n
+            + \left(1 + \epsilon + 3 \psi_n^2 \right) \chi_n
+            + 6 \psi_n \left(\nabla \psi_n \right)^2
+        \right] \\
+        - \psi_{n - 1} 
+        - \delta t \, \left(1 - \theta \right) \left[
+            \nabla^2 \phi_{n - 1}
+            + 2 \phi_{n - 1}
+            + \left(1 + \epsilon + 3 \psi_{n - 1}^2 \right) \chi_{n - 1}
+            + 6 \psi_{n - 1} \left(\nabla \psi_{n - 1} \right)^2
+        \right]
+        \end{multlined}\\
+        R_2(\psi_n, \chi_n, \phi_n)
+        &=
+        \chi_n - \nabla^2 \psi_n \\
+        R_3(\psi_n, \chi_n, \phi_n)
+        &=
+        \phi_n - \nabla^2 \chi_n
+    \end{split}
+\end{equation}
+Since our residual is vector-valued, the Gateaux derivative will be a matrix which acts on a vector-valued deviation $\left[ \delta \psi, \delta \chi, \delta \phi \right]^T$.
+Taking the Gateaux derivative one row at a time yields:
+\begin{equation}
+    \begin{split}
+    dR_1(\psi, \chi, \phi; \; \delta \psi, \delta \chi, \delta \phi)
+    &=
+    \frac{d}{d \tau} R_1(\psi + \tau \delta \psi, \chi + \tau \delta \chi, \phi + \tau \delta \phi) \biggr|_{\tau = 0} \\
+    &=
+    \frac{d}{d\tau}
+    \left[
+    \psi_n + \tau \delta \psi_n
+    - 
+    \begin{multlined}[t]
+        \delta t \, \theta \bigl[
+        \nabla^2 \left(\phi_n + \tau \delta \phi_n \right)
+        + 2 \left( \phi_n + \tau \delta \phi_n \right) \\
+        + \left(1 + \epsilon + 3 \left(\psi_n + \tau \delta \psi_n\right)^2 \right) \left( \chi_n + \tau \delta \chi_n \right) \\
+        + 6 \left( \psi_n + \tau \delta \psi_n \right) \left(\nabla \left( \psi_n + \tau \delta \psi_n \right) \right)^2
+    \bigr] 
+    \end{multlined}
+    \right]_{\tau = 0} \\
+    &=
+    \delta \psi_n
+    - 
+    \begin{multlined}[t]
+        \delta t \, \theta \bigl[
+        \nabla^2 \delta \phi_n
+        + 2 \delta \phi_n \\
+        + \left(1 + \epsilon + 3 \psi_n^2 \right) \delta \chi_n
+        + 6 \psi_n \chi_n \, \delta \psi_n \\
+        + 6 \left(\nabla \psi_n\right)^2 \delta \psi_n
+        + 12 \psi_n \left(\nabla \psi_n \right) \cdot \nabla \delta \psi_n
+    \bigr]
+    \end{multlined} \\
+    dR_2(\psi, \chi, \phi; \; \delta \psi, \delta \chi, \delta \phi)
+    &=
+    \delta \chi_n - \nabla^2 \delta \psi_n \\
+    dR_3(\psi, \chi, \phi; \; \delta \psi, \delta \chi, \delta \phi)
+    &=
+    \delta \phi_n - \nabla^2 \delta \chi_n
+    \end{split}
+\end{equation}
+Given this derivative of the residual, then \href{https://www.wikiwand.com/en/Newton's_method#In_a_Banach_space}{Newton-Rhapson method in functional space} reads:
+\begin{equation}
+    \begin{split}
+        dR(\Psi_n) \delta \Psi_n
+        &= -R(\Psi_n) \\
+        \Psi_{n + 1} 
+        &= \Psi_n + \delta \Psi_n
+    \end{split}
+\end{equation}
+where we have defined:
+\begin{equation}
+    \Psi
+    =
+    \begin{bmatrix}
+        \psi \\
+        \chi \\
+        \phi
+    \end{bmatrix}
+\end{equation}
+$R$ is the vector residual, $\delta \Psi$ is the vector variation of $\Psi$ and:
+\begin{equation}
+    dR(\Psi)
+    =
+    \begin{bmatrix}
+        1 - \delta t \theta \left[6 \psi \chi + 6 \left(\nabla \psi\right)^2 + 12 \psi \left(\nabla \psi\right) \cdot \nabla \right]
+        &-\delta t \theta \left(1 + \epsilon + 3 \psi \right)
+        &-\delta t \theta \left(\nabla^2 + 2\right) \\
+        -\nabla^2 &1 &0 \\
+        0 &-\nabla^2 &1
+    \end{bmatrix}
+\end{equation}
+
+\subsection{Space discretization}
+For this, we introduce a vector test function $A$:
+\begin{equation}
+    A
+    =
+    \begin{bmatrix}
+        \alpha \\
+        \beta \\
+        \gamma
+    \end{bmatrix}
+\end{equation}
+Then our linear equation looks like:
+\begin{equation}
+    A^T \, dR \, \delta \Psi
+    =
+    -A^T \, R
+\end{equation}
+The left-hand side is given by:
+\begin{equation}
+    \begin{split}
+        A^T \, dR \, \delta \Psi
+        &=
+        \begin{multlined}[t]
+            \left<\alpha, \delta \psi_n \right>
+            - \delta t \theta \bigl[ \left< \alpha, \nabla^2 \delta \phi \right>
+                + 2 \left< \alpha, \delta \phi_n \right> \\
+                + \left(1 + \epsilon\right) \left< \alpha, \delta \chi_n \right>
+                + 3 \left< \alpha, \psi_n^2 \delta \chi_n \right> \\
+                + 6 \left<\alpha, \left(\nabla \psi_n\right)^2 \delta \psi_n \right>
+                + 12 \left< \alpha, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \delta \psi_n \right>
+            \bigr] \\
+            + \left< \beta, \delta \chi_n \right>
+            - \left< \beta, \nabla^2 \delta \psi_n \right> \\
+            + \left< \gamma, \delta \phi_n \right>
+            - \left< \gamma, \nabla^2 \delta \chi_n \right>
+        \end{multlined} \\
+        &=
+        \begin{multlined}[t]
+            \left<\alpha, \delta \psi_n \right>
+            - \delta t \theta \bigl[ -\left< \nabla \alpha, \nabla \delta \phi \right>
+                + 2 \left< \alpha, \delta \phi_n \right> \\
+                + \left(1 + \epsilon\right) \left< \alpha, \delta \chi_n \right>
+                + 3 \left< \alpha, \psi_n^2 \delta \chi_n \right> \\
+                + 6 \left<\alpha, \left(\nabla \psi_n\right)^2 \delta \psi_n \right>
+                + 12 \left< \alpha, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \delta \psi_n \right>
+            \bigr] \\
+            + \left< \beta, \delta \chi_n \right>
+            + \left< \nabla \beta, \nabla \delta \psi_n \right> \\
+            + \left< \gamma, \delta \phi_n \right>
+            + \left< \nabla \gamma, \nabla \delta \chi_n \right>
+        \end{multlined}
+    \end{split}
+\end{equation}
+and the right-hand side is given by:
+\begin{equation}
+    \begin{split}
+        -A^T R
+        &=
+        \begin{multlined}[t]
+            -\left<\alpha, \psi_n \right>
+            + \delta t \theta \bigl[
+                \left<\alpha, \nabla^2 \phi_n \right> 
+                + 2 \left< \alpha, \phi_n \right>  
+                + \left(1 + \epsilon\right) \left< \alpha, \chi_n \right> \\
+                + 3 \left< \alpha, \psi_n^2 \chi_n \right>
+                + 6 \left< \alpha, \psi_n \left(\nabla \psi_n \right)^2 \right>
+                \bigr] \\
+            + \left< \alpha, \psi_{n - 1} \right>
+            + \delta t \left(1 - \theta \right) \bigl[
+                \left<\alpha, \nabla^2 \phi_{n - 1} \right>
+                + 2 \left< \alpha, \phi_{n - 1} \right> 
+                + \left(1 + \epsilon\right) \left<\alpha, \chi_{n - 1} \right> \\
+                + 3 \left< \alpha, \psi_{n - 1}^2 \chi_{n - 1} \right> 
+                + 6 \left< \alpha, \psi_{n - 1} \left(\nabla \psi_{n - 1}\right)^2 \right>
+            \bigr] \\
+            - \left<\beta, \chi_n \right>
+            + \left<\beta, \nabla^2 \psi_n\right>
+            - \left< \gamma, \phi_n \right>
+            + \left< \gamma, \nabla^2 \chi_n \right>
+        \end{multlined} \\
+        &=
+        \begin{multlined}[t]
+            -\left<\alpha, \psi_n \right>
+            + \delta t \theta \bigl[
+                -\left<\nabla\alpha, \nabla \phi_n \right> 
+                + 2 \left< \alpha, \phi_n \right>  
+                + \left(1 + \epsilon\right) \left< \alpha, \chi_n \right> \\
+                + 3 \left< \alpha, \psi_n^2 \chi_n \right>
+                + 6 \left< \alpha, \psi_n \left(\nabla \psi_n \right)^2 \right>
+                \bigr] \\
+            + \left< \alpha, \psi_{n - 1} \right>
+            + \delta t \left(1 - \theta \right) \bigl[
+                -\left<\nabla \alpha, \nabla \phi_{n - 1} \right>
+                + 2 \left< \alpha, \phi_{n - 1} \right> 
+                + \left(1 + \epsilon\right) \left<\alpha, \chi_{n - 1} \right> \\
+                + 3 \left< \alpha, \psi_{n - 1}^2 \chi_{n - 1} \right> 
+                + 6 \left< \alpha, \psi_{n - 1} \left(\nabla \psi_{n - 1}\right)^2 \right>
+            \bigr] \\
+            - \left<\beta, \chi_n \right>
+            - \left<\nabla\beta, \nabla \psi_n\right>
+            - \left< \gamma, \phi_n \right>
+            - \left< \nabla\gamma, \nabla \chi_n \right>
+        \end{multlined}
+    \end{split}
+\end{equation}
+Now our shape functions are vector-valued, composed like:
+\begin{equation}
+    \eta_i
+    =
+    \begin{bmatrix}
+        \eta_{i, \psi} \\
+        \eta_{i, \chi} \\
+        \eta_{i, \phi}
+    \end{bmatrix}
+\end{equation}
+Note that, for primitive elements like we will use, only one component will be nonzero for any particular $i$.
+In any case, supposing we assume our solution vector can be written as a linear combinations of primitive test functions, and stipulating that the equation hold for any test function, we get the following left-hand side:
+\begin{equation}
+    A^T \, dR \, \delta \Psi
+    =
+    \sum_{j}
+    \begin{multlined}[t]
+    \Biggl[
+        \left<\eta_{i, \psi}, \eta_{j, \psi} \right>
+        - \delta t \theta \bigl[ -\left< \nabla \eta_{i, \psi}, \nabla \eta_{j, \phi} \right>
+            + 2 \left< \eta_{i, \psi}, \eta_{j, \phi} \right> \\
+            + \left(1 + \epsilon\right) \left< \eta_{i, \psi}, \eta_{j, \chi} \right>
+            + 3 \left< \eta_{i, \psi}, \psi_n^2 \eta_{j, \chi} \right> \\
+            + 6 \left<\eta_{i, \psi}, \left(\nabla \psi_n\right)^2 \eta_{j, \psi} \right>
+            + 12 \left< \eta_{i, \psi}, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \eta_{j, \psi} \right>
+        \bigr] \\
+        + \left< \eta_{i, \chi}, \eta_{j, \chi} \right>
+        + \left< \nabla \eta_{i, \chi}, \nabla \eta_{j, \psi} \right> \\
+        + \left< \eta_{i, \phi}, \eta_{j, \phi} \right>
+        + \left< \nabla \eta_{i, \phi}, \nabla \eta_{j, \chi} \right>
+    \Biggr]
+    \delta \Psi_j
+    \end{multlined}
+\end{equation}
+Finally, we may write our right-hand side as:
+\begin{equation}
+    -A^T R
+    =
+    \begin{multlined}[t]
+        -\left<\eta_{i, \psi}, \psi_n \right>
+        + \delta t \theta \bigl[
+            -\left<\nabla\eta_{i, \psi}, \nabla \phi_n \right> 
+            + 2 \left< \eta_{i, \psi}, \phi_n \right>  
+            + \left(1 + \epsilon\right) \left< \eta_{i, \psi}, \chi_n \right> \\
+            + 3 \left< \eta_{i, \psi}, \psi_n^2 \chi_n \right>
+            + 6 \left< \eta_{i, \psi}, \psi_n \left(\nabla \psi_n \right)^2 \right>
+            \bigr] \\
+        + \left< \eta_{i, \psi}, \psi_{n - 1} \right>
+        + \delta t \left(1 - \theta \right) \bigl[
+            -\left<\nabla \eta_{i, \psi}, \nabla \phi_{n - 1} \right>
+            + 2 \left< \eta_{i, \psi}, \phi_{n - 1} \right> 
+            + \left(1 + \epsilon\right) \left<\eta_{i, \psi}, \chi_{n - 1} \right> \\
+            + 3 \left< \eta_{i, \psi}, \psi_{n - 1}^2 \chi_{n - 1} \right> 
+            + 6 \left< \eta_{i, \psi}, \psi_{n - 1} \left(\nabla \psi_{n - 1}\right)^2 \right>
+        \bigr] \\
+        - \left<\eta_{i, \chi}, \chi_n \right>
+        - \left<\nabla\eta_{i, \chi}, \nabla \psi_n\right>
+        - \left< \eta_{i, \phi}, \phi_n \right>
+        - \left< \nabla\eta_{i, \phi}, \nabla \chi_n \right>
+    \end{multlined}
+\end{equation}
+Finally, note that our matrix can be written in block form as:
+\begin{equation}
+    \begin{bmatrix}
+        B &C &D \\
+        L_{\psi} &M_{\chi} &0 \\
+        0 &L_{\chi} &M_{\phi}
+    \end{bmatrix}
+    \begin{bmatrix}
+        \delta \psi \\
+        \delta \chi \\
+        \delta \phi
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        F \\
+        G \\
+        H
+    \end{bmatrix}
+\end{equation}
+where $F$, $G$, $H$ are the different components of $-A^T R$, $\delta \psi$, $\delta \chi$, $\delta \phi$ are the finite element vectors for each of the variations, and then:
+\begin{equation}
+    \begin{split}
+        B_{ij} 
+        &= \left<\eta_{i,\psi}, \eta_{j, \psi}\right> 
+        - 6 \delta t \, \theta \left[ \left< \eta_{i, \psi}, \left(\nabla \psi_n\right)^2 \eta_{j, \psi} \right>
+        + 2 \left< \eta_{i, \psi}, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \eta_{j, \psi} \right> \right] \\
+        C_{ij}
+        &= -\delta t \, \theta \left[ \left(1 + \epsilon\right) \left<\eta_{i, \psi}, \eta_{j, \chi}\right>
+        + 3 \left< \eta_{i, \psi}, \psi_n^2 \eta_{j, \chi} \right>
+        \right] \\
+        D_{ij}
+        &= -\delta t \, \theta \left[ -\left<\nabla \eta_{i, \psi}, \nabla \eta_{j, \phi}\right>
+        + 2 \left< \eta_{i, \psi}, \eta_{j, \phi} \right> 
+        \right] \\
+        L_{ij}
+        &= -\left< \nabla \eta_{i}, \nabla \eta_{j} \right> \\
+        M_{ij}
+        &= \left< \eta_i, \eta_j \right>
+    \end{split}
+\end{equation}
+where $L$ is something like the Laplacian operator, and $M$ is the mass matrix.
+
+\subsection{Preconditioning}
+Given the block structure, we may try to get a nicer preconditioner as follows:
+\begin{equation} \label{eq:phi-linear-eq}
+    \begin{split}
+        L_\chi \delta \chi + M_\phi \delta \phi &= H \\
+        \implies \delta \phi &= M_\phi^{-1} \left( H - L_\chi \delta \chi \right)
+    \end{split}
+\end{equation}
+Additionally, we get:
+\begin{equation} \label{eq:chi-linear-eq}
+    \begin{split}
+        L_\psi \delta \psi + M_\chi \delta \chi &= G \\
+        \implies \delta \chi &= M_\chi^{-1} \left( G - L_\psi \delta \psi \right)
+    \end{split}
+\end{equation}
+Substituting this back into the first equation yields:
+\begin{equation}
+    \delta \phi
+    =
+    M_\phi^{-1} \left( H - L_\chi M_\chi^{-1} \left(G - L_\psi \delta \psi \right) \right)
+\end{equation}
+Finally, we may substitute all of these back into the first line:
+\begin{equation}
+    B \delta \psi 
+    + C M_\chi^{-1} \left(G - L_\psi \delta \psi \right)
+    + D M_\phi^{-1} \left(H - L_\chi M_\chi^{-1} \left(G - L_\psi \delta \psi \right) \right)
+    =
+    F
+\end{equation}
+Rewriting as a linear equation gives:
+\begin{equation} \label{eq:psi-linear-eq}
+    \left(B + \left( D M_\phi^{-1} - C \right) M_\chi^{-1} L_\psi \right) \delta \psi
+    =
+    F - C M_\chi^{-1} G - D M_\phi^{-1} \left( H - L_\chi M_\chi^{-1} G \right)
+\end{equation}
+Then the scheme is to solve eq. \eqref{eq:psi-linear-eq}, then \eqref{eq:chi-linear-eq} and \eqref{eq:phi-linear-eq} are straightforward, in that one only has to invert the mass matrix which is generally well-conditioned and symmetric.
+We may try to come up with a more efficient preconditioner for eq. \eqref{eq:psi-linear-eq} at some point, but for now we will do a direct solve just to make sure everything is working correctly.
 
 \end{document}
