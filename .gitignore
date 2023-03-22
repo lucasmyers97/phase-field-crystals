@@ -1,6 +1,7 @@
 # local directories
 ZhifeiYang/**
 build/**
+install/**
 
 # latex build files
 *.aux
