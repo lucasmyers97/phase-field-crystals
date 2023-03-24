@@ -2,6 +2,7 @@
 ZhifeiYang/**
 build/**
 install/**
+.cache/**
 
 # latex build files
 *.aux
@@ -13,7 +14,7 @@ install/**
 
 # data files
 *.svg
-.html
+*.html
 
 # developer files
 compile_commands.json
