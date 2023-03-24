@@ -456,7 +456,15 @@ Substituting this back into the first equation yields:
     =
     M_\phi^{-1} \left( H - L_\chi M_\chi^{-1} \left(G - L_\psi \delta \psi \right) \right)
 \end{equation}
-Finally, we may substitute all of these back into the first line:
+The first component of the matrix equation reads:
+\begin{equation} \label{eq:psi-original-equation}
+    B \delta \psi
+    + C \delta \chi
+    + D \delta \phi
+    =
+    F
+\end{equation}
+We may substitute eqs. \eqref{eq:phi-linear-eq} and \eqref{eq:chi-linear-eq} into eq. \eqref{eq:psi-original-equation}:
 \begin{equation}
     B \delta \psi 
     + C M_\chi^{-1} \left(G - L_\psi \delta \psi \right)
@@ -466,7 +474,7 @@ Finally, we may substitute all of these back into the first line:
 \end{equation}
 Rewriting as a linear equation gives:
 \begin{equation} \label{eq:psi-linear-eq}
-    \left(B + \left( D M_\phi^{-1} - C \right) M_\chi^{-1} L_\psi \right) \delta \psi
+    \left(B + \left( D M_\phi^{-1} L_\chi - C \right) M_\chi^{-1} L_\psi \right) \delta \psi
     =
     F - C M_\chi^{-1} G - D M_\phi^{-1} \left( H - L_\chi M_\chi^{-1} G \right)
 \end{equation}
