@@ -10,3 +10,10 @@ install/**
 *.log
 *.out
 *.synctex.gz
+
+# data files
+*.svg
+.html
+
+# developer files
+compile_commands.json
