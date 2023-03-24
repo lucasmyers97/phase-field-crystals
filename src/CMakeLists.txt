@@ -1,1 +1,2 @@
 add_subdirectory(phase_field_crystal_systems)
+add_subdirectory(phase_field_functions)
