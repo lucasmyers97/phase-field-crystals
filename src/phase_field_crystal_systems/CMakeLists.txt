@@ -12,4 +12,9 @@ target_include_directories(PhaseFieldCrystalSystem
     ${SRC_DIR}
     )
 
+target_link_libraries(PhaseFieldCrystalSystem
+    PUBLIC
+    deal.II::Interface
+    )
+
 install(TARGETS PhaseFieldCrystalSystem LIBRARY DESTINATION lib)
