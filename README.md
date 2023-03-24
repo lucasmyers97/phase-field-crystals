@@ -1,6 +1,5 @@
 Phase-field crystals
 ====================
-----
 
 This repository contains code for a finite element solver used to implement the [phase-field crystal model](https://doi.org/10.1103/PhysRevB.97.054113).
 The code is based on the [deal.II finite element library](dealii.org).
@@ -9,7 +8,6 @@ This README will be updated as the repository is expanded and organizational cho
 
 Dependencies
 ------------
-----
 
 This library relies on the [deal.II finite element library](dealii.org).
 Deal.II can also optionally rely on a whole slew of other libraries to enable various extended functionality.
@@ -17,7 +15,6 @@ At the current time, a vanilla installation of deal.II is all that is required, 
 
 Build and installation instructions
 -----------------------------------
-----
 
 Building and installation is handled using CMake.
 
