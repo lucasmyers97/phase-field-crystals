@@ -15,6 +15,7 @@ target_include_directories(PhaseFieldCrystalSystem
 target_link_libraries(PhaseFieldCrystalSystem
     PUBLIC
     deal.II::Interface
+    PhaseFieldFunctions
     )
 
 install(TARGETS PhaseFieldCrystalSystem LIBRARY DESTINATION lib)

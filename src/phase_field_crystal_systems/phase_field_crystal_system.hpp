@@ -5,6 +5,7 @@
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/lac/block_vector.h>
+#include <deal.II/lac/affine_constraints.h>
 
 template <int dim>
 class PhaseFieldCrystalSystem
@@ -17,6 +18,7 @@ private:
     dealii::Triangulation<dim> triangulation;
     dealii::FESystem<dim> fe_system;
     dealii::DoFHandler<dim> dof_handler;
+    dealii::AffineConstraints<double> constraints;
 
     dealii::BlockVector<double> psi_n;
 

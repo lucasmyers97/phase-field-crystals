@@ -1,5 +1,6 @@
 #include "phase_field_crystal_system.hpp"
 
+#include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/types.h>
 #include <deal.II/grid/grid_generator.h>
 
@@ -9,9 +10,13 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 
+#include <deal.II/numerics/vector_tools.h>
+
 #include <fstream>
 #include <iostream>
 #include <vector>
+
+#include "phase_field_functions/hexagonal_lattice.hpp"
 
 template <int dim>
 PhaseFieldCrystalSystem<dim>::PhaseFieldCrystalSystem(unsigned int degree)
@@ -42,6 +47,20 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
         dofs_per_block = dealii::DoFTools::count_dofs_per_fe_block(dof_handler, block_component);
 
     psi_n.reinit(dofs_per_block);
+}
+
+
+
+template <int dim>
+void PhaseFieldCrystalSystem<dim>::initialize_fe_field()
+{
+    HexagonalLattice<dim> hexagonal_lattice;
+
+    dealii::VectorTools::project(dof_handler,
+                                 constraints,
+                                 dealii::QGauss<dim>(fe_system.degree + 1),
+                                 hexagonal_lattice,
+                                 psi_n);
 }
 
 
