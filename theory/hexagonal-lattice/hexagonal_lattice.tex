@@ -82,7 +82,7 @@ For technical reasons associated with the use of piecewise polynomials for the f
     \phi \coloneqq \nabla^2 \chi = \nabla^4 \psi
 \end{equation}
 Substituting these auxiliary variables into our original equations yields:
-\begin{equation}
+\begin{equation} \label{eq:expanded-phase-field}
     \begin{split}
         \frac{\partial \psi}{\partial t}
         =
@@ -485,15 +485,22 @@ We may try to come up with a more efficient preconditioner for eq. \eqref{eq:psi
 
 For this, we need to initialize $\psi$, $\chi$, and $\phi$.
 $\psi$ is given in eq. \eqref{eq:hexagonal-lattice-configuration}.
-We calculate as follows:
+However, $\psi$ is real so that we must only take the real part of the equation to get:
+\begin{equation}
+    \psi\left(\mathbf{r}\right)
+    =
+    \psi_0
+    + \sum_n A_0 \, \cos \left(\mathbf{q}_n \cdot \mathbf{r} \right)
+\end{equation}
+The other fields are then given as:
 \begin{equation}
     \chi(\mathbf{r})
     =
     \nabla^2 \psi(\mathbf{r})
     =
-    A_0 \sum_n q_n^2 \, e^{i \mathbf{q}_n \cdot \mathbf{r}}
+    - A_0 \sum_n q_n^2 \, \cos \left(\mathbf{q}_n \cdot \mathbf{r} \right)
     = 
-    A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}
+    - A_0 \sum_n \cos \left(\mathbf{q}_n \cdot \mathbf{r} \right) 
 \end{equation}
 and
 \begin{equation}
@@ -501,9 +508,9 @@ and
     =
     \nabla^2 \chi(\mathbf{r})
     =
-    A_0 \sum_n q_n^4 \, e^{i \mathbf{q}_n \mathbf{r}}
+    A_0 \sum_n q_n^4 \, \cos \left(\mathbf{q}_n \cdot \mathbf{r} \right) 
     =
-    A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}
+    A_0 \sum_n \cos \left(\mathbf{q}_n \cdot \mathbf{r} \right) 
 \end{equation}
 because each $\mathbf{q}_n$ is a unit vector.
 
