@@ -25,6 +25,7 @@ private:
     void make_grid(unsigned int n_refines);
     void setup_dofs();
     void initialize_fe_field();
+    void output_configuration();
 };
 
 #endif

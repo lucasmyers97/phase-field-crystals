@@ -10,11 +10,14 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 
+#include <deal.II/numerics/data_component_interpretation.h>
 #include <deal.II/numerics/vector_tools.h>
+#include <deal.II/numerics/data_out.h>
 
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 
@@ -31,7 +34,7 @@ PhaseFieldCrystalSystem<dim>::PhaseFieldCrystalSystem(unsigned int degree)
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
 {
-    dealii::GridGenerator::hyper_cube(triangulation);
+    dealii::GridGenerator::hyper_cube(triangulation, -20.0, 20.0);
     triangulation.refine_global(n_refines);
 }
 
@@ -41,6 +44,10 @@ template <int dim>
 void PhaseFieldCrystalSystem<dim>::setup_dofs()
 {
     dof_handler.distribute_dofs(fe_system);
+
+    constraints.clear();
+    dealii::DoFTools::make_hanging_node_constraints(dof_handler, constraints);
+    constraints.close();
 
     std::vector<unsigned int> block_component = {0, 1, 2};
     const std::vector<dealii::types::global_dof_index> 
@@ -66,10 +73,33 @@ void PhaseFieldCrystalSystem<dim>::initialize_fe_field()
 
 
 template <int dim>
+void PhaseFieldCrystalSystem<dim>::output_configuration()
+{
+    std::vector<std::string> field_names = {"psi", "chi", "phi"};
+    std::vector<dealii::DataComponentInterpretation::DataComponentInterpretation>
+        data_component_interpretation(3, dealii::DataComponentInterpretation::component_is_scalar);
+
+    dealii::DataOut<dim> data_out;
+    data_out.attach_dof_handler(dof_handler);
+    data_out.add_data_vector(psi_n,
+                             field_names,
+                             dealii::DataOut<dim>::type_dof_data,
+                             data_component_interpretation);
+    data_out.build_patches();
+
+    std::ofstream output("phase_field.vtu");
+    data_out.write_vtu(output);
+}
+
+
+
+template <int dim>
 void PhaseFieldCrystalSystem<dim>::run(unsigned int n_refines)
 {
     make_grid(n_refines);
     setup_dofs();
+    initialize_fe_field();
+    output_configuration();
 }
 
 
