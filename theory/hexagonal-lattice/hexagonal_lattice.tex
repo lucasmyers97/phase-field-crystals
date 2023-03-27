@@ -10,7 +10,7 @@
 To begin, we create a scalar phase field $\psi$, which roughly corresponds to a time-average of the mass-density of atoms in the lattice.
 Hence, we would like to write down a form which has mass concentrated in a hexagonal lattice pattern.
 This looks like:
-\begin{equation}
+\begin{equation} \label{eq:hexagonal-lattice-configuration}
     \psi(\mathbf{r})
     =
     \psi_0
@@ -480,5 +480,31 @@ Rewriting as a linear equation gives:
 \end{equation}
 Then the scheme is to solve eq. \eqref{eq:psi-linear-eq}, then \eqref{eq:chi-linear-eq} and \eqref{eq:phi-linear-eq} are straightforward, in that one only has to invert the mass matrix which is generally well-conditioned and symmetric.
 We may try to come up with a more efficient preconditioner for eq. \eqref{eq:psi-linear-eq} at some point, but for now we will do a direct solve just to make sure everything is working correctly.
+
+\section{Initializing hexagonal lattice}
+
+For this, we need to initialize $\psi$, $\chi$, and $\phi$.
+$\psi$ is given in eq. \eqref{eq:hexagonal-lattice-configuration}.
+We calculate as follows:
+\begin{equation}
+    \chi(\mathbf{r})
+    =
+    \nabla^2 \psi(\mathbf{r})
+    =
+    A_0 \sum_n q_n^2 \, e^{i \mathbf{q}_n \cdot \mathbf{r}}
+    = 
+    A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation}
+and
+\begin{equation}
+    \phi(\mathbf{r})
+    =
+    \nabla^2 \chi(\mathbf{r})
+    =
+    A_0 \sum_n q_n^4 \, e^{i \mathbf{q}_n \mathbf{r}}
+    =
+    A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation}
+because each $\mathbf{q}_n$ is a unit vector.
 
 \end{document}
