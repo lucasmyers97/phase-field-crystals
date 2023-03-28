@@ -3,6 +3,7 @@
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/types.h>
 #include <deal.II/grid/grid_generator.h>
+#include <deal.II/grid/grid_tools.h>
 
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_system.h>
@@ -10,6 +11,7 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 
+#include <deal.II/grid/tria.h>
 #include <deal.II/numerics/data_component_interpretation.h>
 #include <deal.II/numerics/vector_tools.h>
 #include <deal.II/numerics/data_out.h>
@@ -34,7 +36,10 @@ PhaseFieldCrystalSystem<dim>::PhaseFieldCrystalSystem(unsigned int degree)
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
 {
-    dealii::GridGenerator::hyper_cube(triangulation, -20.0, 20.0);
+    dealii::GridGenerator::hyper_cube(triangulation, 
+                                      /*left*/ -20.0, 
+                                      /*right*/ 20.0, 
+                                      /*colorize*/ true);
     triangulation.refine_global(n_refines);
 }
 
@@ -47,6 +52,17 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
 
     constraints.clear();
     dealii::DoFTools::make_hanging_node_constraints(dof_handler, constraints);
+
+    dealii::DoFTools::make_periodicity_constraints(dof_handler,
+                                                   /*b_id1*/ 0,
+                                                   /*b_id2*/ 1,
+                                                   /*direction*/ 0,
+                                                   constraints);
+    dealii::DoFTools::make_periodicity_constraints(dof_handler,
+                                                   /*b_id1*/ 2,
+                                                   /*b_id2*/ 3,
+                                                   /*direction*/ 1,
+                                                   constraints);
     constraints.close();
 
     std::vector<unsigned int> block_component = {0, 1, 2};

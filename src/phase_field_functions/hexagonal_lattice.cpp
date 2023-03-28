@@ -25,10 +25,13 @@ double HexagonalLattice<dim>::value(const dealii::Point<dim> &p,
                                     const unsigned int component) const
 {
     const int sign = ((component % 2) == 0) ? 1 : -1;
+    dealii::Point<dim> shifted_point = p;
+    shifted_point[0] += 1.0;
+    shifted_point[1] += 2.0;
 
     double sum = 0;
     for (const auto &qn : q)
-        sum += std::cos(qn * p);
+        sum += std::cos(qn * shifted_point);
 
     return psi_0 + A_0 * sign * sum;
 }
