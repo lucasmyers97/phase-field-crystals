@@ -14,6 +14,7 @@ class HexagonalLattice : public dealii::Function<dim>
 {
 public:
     HexagonalLattice();
+    HexagonalLattice(double A_0, double psi_0);
 
     virtual double value(const dealii::Point<dim> &p,
                          const unsigned int component = 0) const override;

@@ -254,7 +254,8 @@ The left-hand side is given by:
             - \delta t \theta \bigl[ \left< \alpha, \nabla^2 \delta \phi \right>
                 + 2 \left< \alpha, \delta \phi_n \right> \\
                 + \left(1 + \epsilon\right) \left< \alpha, \delta \chi_n \right>
-                + 3 \left< \alpha, \psi_n^2 \delta \chi_n \right> \\
+                + 3 \left< \alpha, \psi_n^2 \delta \chi_n \right> 
+                + 6 \left< \alpha, \psi_n \, \chi_n \, \delta \psi_n \right> \\
                 + 6 \left<\alpha, \left(\nabla \psi_n\right)^2 \delta \psi_n \right>
                 + 12 \left< \alpha, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \delta \psi_n \right>
             \bigr] \\
@@ -269,7 +270,8 @@ The left-hand side is given by:
             - \delta t \theta \bigl[ -\left< \nabla \alpha, \nabla \delta \phi \right>
                 + 2 \left< \alpha, \delta \phi_n \right> \\
                 + \left(1 + \epsilon\right) \left< \alpha, \delta \chi_n \right>
-                + 3 \left< \alpha, \psi_n^2 \delta \chi_n \right> \\
+                + 3 \left< \alpha, \psi_n^2 \delta \chi_n \right> 
+                + 6 \left< \alpha, \psi_n \, \chi_n \, \delta \psi_n \right> \\
                 + 6 \left<\alpha, \left(\nabla \psi_n\right)^2 \delta \psi_n \right>
                 + 12 \left< \alpha, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \delta \psi_n \right>
             \bigr] \\
@@ -354,7 +356,8 @@ In any case, supposing we assume our solution vector can be written as a linear 
         - \delta t \theta \bigl[ -\left< \nabla \eta_{i, \psi}, \nabla \eta_{j, \phi} \right>
             + 2 \left< \eta_{i, \psi}, \eta_{j, \phi} \right> \\
             + \left(1 + \epsilon\right) \left< \eta_{i, \psi}, \eta_{j, \chi} \right>
-            + 3 \left< \eta_{i, \psi}, \psi_n^2 \eta_{j, \chi} \right> \\
+            + 3 \left< \eta_{i, \psi}, \psi_n^2 \eta_{j, \chi} \right> 
+            + 6 \left< \eta_{i, \psi}, \psi_n \, \chi_n \, \eta_{j, \psi} \right> \\
             + 6 \left<\eta_{i, \psi}, \left(\nabla \psi_n\right)^2 \eta_{j, \psi} \right>
             + 12 \left< \eta_{i, \psi}, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \eta_{j, \psi} \right>
         \bigr] \\
@@ -412,12 +415,40 @@ Finally, note that our matrix can be written in block form as:
         H
     \end{bmatrix}
 \end{equation}
-where $F$, $G$, $H$ are the different components of $-A^T R$, $\delta \psi$, $\delta \chi$, $\delta \phi$ are the finite element vectors for each of the variations, and then:
+where $F$, $G$, $H$ are the different components of $-A^T R$:
+\begin{equation}
+    \begin{split}
+        F_i
+        &=
+        \begin{multlined}[t]
+            \biggl<\eta_{i, \psi}, 
+            -\psi_n + \psi_{n - 1} \\
+            + \delta t \biggl[ 
+            \theta \left( 2 \phi_n + (1 + \epsilon) \chi_n + 3 \psi_n^2 \chi_n + 6 \psi_n \left(\nabla \psi_n \right)^2
+            \right) \\
+            + \left(1 - \theta \right) \left( 2 \phi_{n - 1} + (1 + \epsilon) \chi_{n - 1} + 3 \psi_{n - 1}^2 \chi_{n - 1} + 6 \psi_{n - 1} \left(\nabla \psi_{n - 1}\right)^2
+            \right)
+            \biggr]\biggr> \\
+            - \delta t \left< \nabla \eta_{i, \psi}, \theta \nabla \phi_n + \left(1 - \theta\right) \nabla \phi_{n - 1} \right>
+        \end{multlined}\\
+        G_i
+        &=
+        - \left<\eta_{i, \chi}, \chi_n \right>
+        - \left< \nabla \eta_{i, \chi}, \nabla \psi_n \right> \\
+        H_i
+        &=
+        - \left< \eta_{i, \phi}, \phi_n \right>
+        - \left<\nabla \eta_{i, \phi}, \nabla \chi_n \right>
+    \end{split}
+\end{equation}
+
+$\delta \psi$, $\delta \chi$, $\delta \phi$ are the finite element vectors for each of the variations, and then:
 \begin{equation}
     \begin{split}
         B_{ij} 
         &= \left<\eta_{i,\psi}, \eta_{j, \psi}\right> 
-        - 6 \delta t \, \theta \left[ \left< \eta_{i, \psi}, \left(\nabla \psi_n\right)^2 \eta_{j, \psi} \right>
+        - 6 \delta t \, \theta \left[ \left< \eta_{i, \psi}, \psi_n \, \chi_n \eta_{j, \psi} \right>
+        + \left< \eta_{i, \psi}, \left(\nabla \psi_n\right)^2 \eta_{j, \psi} \right>
         + 2 \left< \eta_{i, \psi}, \psi_n \left(\nabla \psi_n \right) \cdot \nabla \eta_{j, \psi} \right> \right] \\
         C_{ij}
         &= -\delta t \, \theta \left[ \left(1 + \epsilon\right) \left<\eta_{i, \psi}, \eta_{j, \chi}\right>
@@ -428,7 +459,7 @@ where $F$, $G$, $H$ are the different components of $-A^T R$, $\delta \psi$, $\d
         + 2 \left< \eta_{i, \psi}, \eta_{j, \phi} \right> 
         \right] \\
         L_{ij}
-        &= -\left< \nabla \eta_{i}, \nabla \eta_{j} \right> \\
+        &= \left< \nabla \eta_{i}, \nabla \eta_{j} \right> \\
         M_{ij}
         &= \left< \eta_i, \eta_j \right>
     \end{split}
@@ -476,7 +507,7 @@ Rewriting as a linear equation gives:
 \begin{equation} \label{eq:psi-linear-eq}
     \left(B + \left( D M_\phi^{-1} L_\chi - C \right) M_\chi^{-1} L_\psi \right) \delta \psi
     =
-    F - C M_\chi^{-1} G - D M_\phi^{-1} \left( H - L_\chi M_\chi^{-1} G \right)
+    F - C M_\chi^{-1} G + D M_\phi^{-1} \left( L_\chi M_\chi^{-1} G - H \right)
 \end{equation}
 Then the scheme is to solve eq. \eqref{eq:psi-linear-eq}, then \eqref{eq:chi-linear-eq} and \eqref{eq:phi-linear-eq} are straightforward, in that one only has to invert the mass matrix which is generally well-conditioned and symmetric.
 We may try to come up with a more efficient preconditioner for eq. \eqref{eq:psi-linear-eq} at some point, but for now we will do a direct solve just to make sure everything is working correctly.
@@ -513,5 +544,201 @@ and
     A_0 \sum_n \cos \left(\mathbf{q}_n \cdot \mathbf{r} \right) 
 \end{equation}
 because each $\mathbf{q}_n$ is a unit vector.
+
+\subsection{Time evolution of this configuration}
+For debugging purposes, let's calculate the right-hand side of the time evolution equation given this configuration:
+\begin{equation*}
+    \begin{split}
+        \nabla^2 \phi
+        &=
+        -A_0 \sum_n q_n^6 \cos(\mathbf{q}_n \cdot \mathbf{r}) \\
+        2 \phi
+        &=
+        2 A_0 \sum_n q_n^4 \cos(\mathbf{q}_n \cdot \mathbf{r}) \\
+        (1 + \epsilon) \chi
+        &=
+        -(1 + \epsilon) A_0 \sum_n q_n^2 \cos(\mathbf{q}_n \cdot \mathbf{r}) \\
+        %
+        3 \psi^2 \chi
+        &= 3\left(\psi_0 + A_0 \sum_l \cos(\mathbf{q}_l \cdot \mathbf{r})\right)
+        \left(\psi_0 + A_0 \sum_m \cos(\mathbf{q}_m \cdot \mathbf{r})\right) 
+        \left(-A_0 \sum_n q_n^2 \cos(\mathbf{q}_n \cdot \mathbf{r})\right) \\
+        &= 3 \left(\psi_0^2 + 2 \psi_0 A_0 \sum_l \cos(\mathbf{q}_l \cdot \mathbf{r}) 
+        + A_0^2 \sum_{l, m} \cos(\mathbf{q}_l \cdot \mathbf{r}) \cos(\mathbf{q}_m \cdot \mathbf{r})\right)
+        \left(-A_0 \sum_n q_n^2 \cos(\mathbf{q}_n \cdot \mathbf{r})\right) \\
+        &= -3 \left(\psi_0 A_0 \sum_n q_n^2 \cos(\mathbf{q}_n \cdot \mathbf{r})
+        + 2 \psi_0 A_0^2 \sum_{n, l} \cos(\mathbf{q}_l \cdot \mathbf{r}) \cos(\mathbf{q}_n \cdot \mathbf{r})
+        + A_0^3 \sum_{l, m, n} \cos(\mathbf{q}_l \cdot \mathbf{r})\cos(\mathbf{q}_m \cdot \mathbf{r})\cos(\mathbf{q}_n \cdot \mathbf{r}) \right)\\
+        &=
+        \begin{multlined}[t]
+            -3 \biggl( \psi_0 A_0 \sum_n q_n^2 \cos(\mathbf{q}_n \cdot \mathbf{r}) \\
+            + \psi_0 A_0^2 \sum_{n, l} \left[\cos((\mathbf{q}_n - \mathbf{q}_l) \cdot \mathbf{r}) + \cos((\mathbf{q}_n + \mathbf{q}_l) \cdot \mathbf{r})\right] \\
+            + \frac12 A_0^3 \sum_{l, m, n} \cos(\mathbf{q}_m \cdot \mathbf{r}) \left[\cos((\mathbf{q}_n - \mathbf{q}_l) \cdot \mathbf{r}) + \cos((\mathbf{q}_n + \mathbf{q}_l) \cdot \mathbf{r})\right]
+            \biggr)
+        \end{multlined} \\
+        %
+        6 \psi \left(\nabla \psi \right)^2
+        &=
+        6 \left(\psi_0 + A_0 \sum_l \cos(\mathbf{q}_l \cdot \mathbf{r})\right)
+        \left( A_0^2 \sum_{n, m} \mathbf{q}_n \cdot \mathbf{q}_m \sin(\mathbf{q}_n \cdot \mathbf{r}) \sin(\mathbf{q}_m \cdot \mathbf{r}) \right) \\
+        &= 
+        \begin{multlined}[t]
+        3 \biggl(
+        \psi_0 A_0^2 \sum_{n, m} \left(\frac32 \delta_{m, n} - \frac12\right) \left[\cos((\mathbf{q}_m - \mathbf{q}_n)\cdot \mathbf{r}) - \cos((\mathbf{q}_m + \mathbf{q}_n)\cdot \mathbf{r}) \right] \\
+        + A_0^3 \sum_{l, m, n} \left(\frac32 \delta_{m, n} - \frac12\right) \cos(\mathbf{q}_l \cdot \mathbf{r}) \left[\cos((\mathbf{q}_m - \mathbf{q}_n)\cdot \mathbf{r}) - \cos((\mathbf{q}_m + \mathbf{q}_n)\cdot \mathbf{r}) \right)
+        \biggr)
+        \end{multlined}
+    \end{split}
+\end{equation*}
+First we note that, because $q_n^2 = 1$ we get:
+\begin{equation*}
+    \nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi
+    =
+    \epsilon A_0 \sum_n \cos(\mathbf{q}_n \cdot \mathbf{r})
+\end{equation*}
+Then, taking $\psi_0 = 0$ for ease of calculation we get:
+\begin{equation}
+    3 \psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2
+    =
+    \frac92 A_0^3 \sum_l \cos(\mathbf{q}_l \cdot \mathbf{r})
+\end{equation}
+
+For debugging purposes, let's calculate the right-hand side of the time evolution equation given this configuration.
+For ease of calculation, we take the complex exponential with the understanding that at the end we take the real part of the entire expression:
+\begin{equation*}
+    \nabla^2 \phi
+    = - A_0 \sum_n q_n^6 e^{i \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation*}
+\begin{equation*}
+    2 \phi
+    = 2 A_0 \sum_n q_n^4 e^{i \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation*}
+\begin{equation*}
+    (1 + \epsilon) \chi
+    = -(1 + \epsilon) A_0 \sum_n q_n^2 e^{i \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation*}
+Thus:
+\begin{equation}
+    \nabla^2 \phi + 2\phi +(1 + \epsilon)\chi
+    = -\epsilon A_0 \sum_n q_n^2 e^{i \mathbf{q}_n \cdot \mathbf{r}}
+\end{equation}
+Now for the nonlinear terms:
+\begin{equation*}
+    \begin{split}
+        3 \psi^2 \chi
+        &=
+        3 \left(\psi_0 + A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}\right)
+        \left(\psi_0 + A_0 \sum_m e^{i \mathbf{q}_m \cdot \mathbf{r}}\right)
+        \left(-A_0 \sum_l e^{i \mathbf{q}_l \cdot \mathbf{r}} \right) \\
+        &=
+        3\left(\psi_0^2 
+        + 2 \psi_0 A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}
+        + A_0^2 \sum_{n, m} e^{i \left(\mathbf{q}_n + \mathbf{q}_m\right) \cdot \mathbf{r}}
+        \right)
+        \left(-A_0 \sum_l e^{i \mathbf{q}_l \cdot \mathbf{r}} \right) \\
+        &=
+        -3 \psi_0^2 A_0 \sum_l e^{\mathbf{q}_l \cdot \mathbf{r}}
+        - 6 \psi_0 A_0^2 \sum_{n, m} e^{i \left(\mathbf{q}_n + \mathbf{q}_m\right) \cdot \mathbf{r}}
+        -3 A_0^3 \sum_{n, m, l} e^{i \left(\mathbf{q}_n + \mathbf{q}_m + \mathbf{q}_l\right) \cdot \mathbf{r}}
+    \end{split}
+\end{equation*}
+\begin{equation*}
+    \begin{split}
+        6 \psi \left(\nabla \psi\right)^2
+        &=
+        6 \left(\psi_0 + A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}} \right)
+        \left(A_0 \sum_m i\mathbf{q}_m e^{i \mathbf{q}_m \cdot \mathbf{r}} \right) \cdot
+        \left(A_0 \sum_l i\mathbf{q}_l e^{i \mathbf{q}_l \cdot \mathbf{r}} \right) \\
+        &=
+        -6\psi_0 A_0^2 \sum_{n, m} \mathbf{q}_n \cdot \mathbf{q}_m e^{i \left(\mathbf{q}_n + \mathbf{q}_m\right) \cdot \mathbf{r}}
+        -6 A_0^3 \sum_{n, m, l} \mathbf{q}_n \cdot \mathbf{q}_m e^{i \left(\mathbf{q}_n + \mathbf{q}_m + \mathbf{q}_l\right) \cdot \mathbf{r}}
+    \end{split}
+\end{equation*}
+Now we have to establish some identities of the lattice vectors for this configuration.
+Note that:
+\begin{equation}
+    \begin{split}
+    \mathbf{q}_m \cdot \mathbf{q}_n
+        &=
+    \begin{cases}
+        1 & m = n \\
+        -\frac12 & m \neq n
+    \end{cases} \\
+        &=
+    \left(\frac32 \delta_{mn} - \frac12\right)
+    \end{split}
+\end{equation}
+Additionally,
+\begin{equation}
+    \mathbf{q}_m + \mathbf{q}_n
+    =
+    \begin{cases}
+        2 \mathbf{q}_m & m = n \\
+        -\mathbf{q}_l & m \neq n \text{, (where } m \neq l \neq n \text{)}
+    \end{cases}
+\end{equation}
+Given these, we may make some progress:
+\begin{equation}
+    \begin{split}
+        \sum_{n, m} \mathbf{q}_n \cdot \mathbf{q}_n e^{i \left(\mathbf{q}_n + \mathbf{q}_m\right) \cdot \mathbf{r}}
+        &=
+        \sum_n e^{2 \mathbf{q}_n \cdot \mathbf{r}}
+        - \frac12 \sum_{m \neq n} e^{i \left(\mathbf{q}_n + \mathbf{q}_m \right) \cdot \mathbf{r}} \\
+        &=
+        \sum_n \left(e^{2 i \mathbf{q}_n \cdot \mathbf{r}} - e^{- i \mathbf{q_n \cdot \mathbf{r}}}\right)
+    \end{split}
+\end{equation}
+Additionally,
+\begin{equation}
+    \begin{split}
+        \sum_{n, m, l} \mathbf{q}_n \cdot \mathbf{q}_m e^{i \left( \mathbf{q}_n + \mathbf{q}_m + \mathbf{q}_l \right) \cdot \mathbf{r} }
+        &=
+        \sum_{n, m} \left(e^{2 i \mathbf{q}_n \cdot \mathbf{r}} - e^{-i \mathbf{q}_n \cdot r} \right)
+        e^{i \mathbf{q}_m \cdot \mathbf{r}} \\
+        &=
+        \sum_{n, m} e^{i \left(2 \mathbf{q}_n + \mathbf{q}_m \right) \cdot \mathbf{r}}
+        - \sum_{n, m} e^{i \left(\mathbf{q}_n - \mathbf{q}_m \right) \cdot \mathbf{r}}
+    \end{split}
+\end{equation}
+Also:
+\begin{equation}
+    \begin{split}
+        \sum_{n, m} e^{i \left(\mathbf{q}_n + \mathbf{q}_m\right) \cdot \mathbf{r}}
+        &=
+        \sum_n e^{i 2 \mathbf{q}_n \cdot \mathbf{r}}
+        + 2 \sum_n e^{-i \mathbf{q}_n \cdot \mathbf{r}}
+    \end{split}
+\end{equation}
+and finally:
+\begin{equation}
+    \begin{split}
+        \sum_{n, m, l} e^{i \left( \mathbf{q}_n + \mathbf{q}_m + \mathbf{q}_l\right) \cdot \mathbf{r}}
+        &=
+        \sum_{n, m} \left(e^{i 2 \mathbf{q}_n \cdot \mathbf{r}} + 2 e^{-i \mathbf{q}_n \cdot \mathbf{r}}\right)
+        e^{i \mathbf{q}_m \cdot \mathbf{r}} \\
+        &=
+        \sum_{n, m} e^{i \left(2 \mathbf{q}_n + \mathbf{q}_m \right) \cdot \mathbf{r}}
+        + 2 \sum_{n, m} e^{i \left(\mathbf{q}_n - \mathbf{q}_m \right) \cdot \mathbf{r}}
+    \end{split}
+\end{equation}
+Substituting we get:
+\begin{equation}
+    6 \psi \left(\nabla \psi\right)^2
+    =
+    -6 \psi_0 A_0^2 \sum_n e^{2 i \mathbf{q}_n \cdot \mathbf{r}}
+    + 6 \psi_0 A_0^2 \sum_n e^{- i \mathbf{q_n \cdot \mathbf{r}}}
+    - 6 A_0^3 \sum_{n, m} e^{i \left(2 \mathbf{q}_n + \mathbf{q}_m \right) \cdot \mathbf{r}}
+    + 6 A_0^3 \sum_{n, m} e^{i \left(\mathbf{q}_n - \mathbf{q}_m \right) \cdot \mathbf{r}}
+\end{equation}
+and
+\begin{equation}
+    3 \psi^2 \chi
+    =
+    -3 \psi_0^2 A_0 \sum_n e^{i \mathbf{q}_n \cdot \mathbf{r}}
+    -6 \psi_0 A_0^2 \sum_n e^{i 2 \mathbf{q}_n \cdot \mathbf{r}}
+    - 12\psi_0 A_0^2 \sum_n e^{-i \mathbf{q}_n \cdot \mathbf{r}}
+    - 3 A_0^3 \sum_{n, m} e^{i \left(2 \mathbf{q}_n + \mathbf{q}_m \right) \cdot \mathbf{r}}
+    - 6 A_0^3 \sum_{n, m} e^{i \left(\mathbf{q}_n - \mathbf{q}_m \right) \cdot \mathbf{r}}
+\end{equation}
 
 \end{document}
