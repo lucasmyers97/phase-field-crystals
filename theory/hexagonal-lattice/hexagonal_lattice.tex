@@ -545,7 +545,118 @@ and
 \end{equation}
 because each $\mathbf{q}_n$ is a unit vector.
 
-\subsection{Time evolution of this configuration}
+\section{Configurations wtih dislocations}
+According to Fei's report, the way to make a dislocation at point $\mathbf{u}_j$ with Burgers vector $\mathbf{b}_j$ is to first define the quantity:
+\begin{equation}
+    s_{n, j} = \frac{1}{2\pi} \left(\mathbf{q}_n \cdot \mathbf{b}_j\right)
+\end{equation}
+Given this, we can define a phase distortion given by:
+\begin{equation}
+    \varphi_{n, j} \left(\mathbf{r}\right)
+    =
+    s_{n, j} \, \theta_j \left( \mathbf{r} - \mathbf{u}_j \right)
+    = s_{n, j} \, \text{atan2}\left(r_y - u_{j, y}, r_x - u_{j, x}\right)
+\end{equation}
+where $\theta_j$ is the polar angle centered at $\mathbf{u}_j$.
+The phase field then becomes:
+\begin{equation}
+    \psi(\mathbf{r})
+    =
+    \psi_0
+    + A_0 \sum_n e^{i \left(\mathbf{q}_n \cdot \mathbf{r} + \varphi_{n, j}(\mathbf{r})\right)}
+\end{equation}
+For an arbitrary number of defects, this becomes:
+\begin{equation}
+    \psi(\mathbf{r})
+    =
+    \psi_0
+    + A_0 \sum_n e^{i \left(\mathbf{q}_n \cdot \mathbf{r} + \sum_j \varphi_{n, j}(\mathbf{r})\right)}
+\end{equation}
+Given this, we calculate the auxiliary fields:
+\begin{equation}
+    \begin{split}
+        \chi(\mathbf{r})
+        &=
+        \nabla^2 \psi(\mathbf{r}) \\
+        &=
+        A_0 \sum_n e^{i \left(\mathbf{q}_n \cdot \mathbf{r} + \sum_j \varphi_{n, j}(\mathbf{r})\right)}
+        \left(-q_n^2 + \sum_j \nabla^2 i \varphi_{n, j}\right) \\
+        &= -A_0 \sum_n q_n^2 e^{i \left(\mathbf{q}_n \cdot \mathbf{r} + \sum_j \varphi_{n, j}(\mathbf{r})\right)}
+    \end{split}
+\end{equation}
+Here, note that $\varphi_{n, j}$ is proportional to a polar angle centered at $\mathbf{u}_j$.
+Additionally, in two dimensions in polar coordinates the Laplacian operator is given by:
+\begin{equation}
+    \nabla^2
+    =
+    \frac{\partial^2}{\partial r^2}
+    + \frac{1}{r} \frac{\partial}{\partial r}
+    + \frac{1}{r^2} \frac{\partial^2}{\partial \theta^2}
+\end{equation}
+Since this is independent of basis, we can change basis to be centered around $\mathbf{u}_j$ in which case $\nabla^2 \varphi_{n, j} = 0$ is easily calculated.
+Similarly:
+\begin{equation}
+    \phi(\mathbf{r})
+    = A_0 \sum_n q_n^4 e^{i \left(\mathbf{q}_n \cdot \mathbf{r} + \sum_j \varphi_{n, j}(\mathbf{r})\right)}
+\end{equation}
+
+\section{Calculating configurational stress}
+The energy due to an infinitesimal distortion of the phase field is given by:
+\begin{equation}
+    \mathcal{E}
+    =
+    \left[
+        -\frac{\partial f}{\partial (\partial_{ik} \psi)} \partial_{jk} \psi
+        + \left(\partial_k \frac{\partial f}{\partial (\partial_{ik}\psi)}\right) \partial_j \psi
+        + \delta_{ij} f
+    \right]
+    \partial_i u_j
+\end{equation}
+The configurational stress is the derivative of this with respect to the displacement gradient:
+\begin{equation}
+    \begin{split}
+        \sigma_{ij}
+        &=
+        \frac{\partial \mathcal{E}}{\partial (\partial_i u_j)} \\
+        &=
+        -\frac{\partial f}{\partial (\partial_{ik} \psi)} \partial_{jk} \psi
+        + \left(\partial_k \frac{\partial f}{\partial (\partial_{ik}\psi)}\right) \partial_j \psi
+        + \delta_{ij} f
+    \end{split}
+\end{equation}
+Which, given the specific free energy density $f$ gives:
+\begin{equation}
+    \sigma_{ij}
+    =
+    \left[\partial_i \mathcal{L} \psi \right] \partial_j \psi
+    - \left[ \mathcal{L} \psi \right] \partial_{ij} \psi
+    + f \delta_{ij}
+\end{equation}
+where $\mathcal{L} = 1 + \nabla^2$.
+Written out in its entirety we get:
+\begin{equation}
+    \sigma_{ij}
+    =
+    (\partial_i \psi) (\partial_j \psi)
+    + (\partial_i \nabla^2 \psi) (\partial_j \psi)
+    - \psi \partial_{ij} \psi
+    - (\nabla^2 \psi) (\partial_{ij} \psi)
+    + \left(\nabla^6 \psi + 2 \nabla^4 \psi + (1 + \epsilon) \nabla^2 \psi + \nabla^2 \psi^3\right)\delta_{ij}
+\end{equation}
+Finally, written in terms of our auxiliary variables:
+\begin{equation}
+    \sigma_{ij}
+    =
+    (\partial_i \psi) (\partial_j \psi)
+    + (\partial_i \chi) (\partial_j \psi)
+    - \psi \partial_{ij} \psi
+    - \chi (\partial_{ij} \psi)
+    + \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right)\delta_{ij}
+\end{equation}
+Now note that we will not actually be able to calculate this at each of the quadrature points because we are only using linear elements.
+H
+
+\section{Time evolution of this configuration}
 For debugging purposes, let's calculate the right-hand side of the time evolution equation given this configuration:
 \begin{equation*}
     \begin{split}

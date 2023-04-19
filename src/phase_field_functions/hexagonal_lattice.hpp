@@ -14,7 +14,12 @@ class HexagonalLattice : public dealii::Function<dim>
 {
 public:
     HexagonalLattice();
-    HexagonalLattice(double A_0, double psi_0);
+    HexagonalLattice(double A_0, 
+                     double psi_0 = -0.43, 
+                     const std::vector<dealii::Tensor<1, dim>>& dislocation_positions
+                     = std::vector<dealii::Tensor<1, dim>>(),
+                     const std::vector<dealii::Tensor<1, dim>>& burgers_vectors 
+                     = std::vector<dealii::Tensor<1, dim>>());
 
     virtual double value(const dealii::Point<dim> &p,
                          const unsigned int component = 0) const override;
@@ -27,9 +32,13 @@ public:
     //                                std::vector<dealii::Vector<double>> &values) const override;
 
 private:
+    // lattice quantities
     std::vector<dealii::Tensor<1, dim>> q;
     double A_0 = 1.0;
     double psi_0 = 1.0;
+
+    std::vector<dealii::Tensor<1, dim>> dislocation_positions;
+    std::vector<dealii::Tensor<1, dim>> burgers_vectors;
 };
 
 #endif

@@ -3,6 +3,7 @@
 #include <deal.II/base/array_view.h>
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/subscriptor.h>
+#include <deal.II/base/tensor.h>
 #include <deal.II/base/types.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
@@ -106,10 +107,16 @@ PhaseFieldCrystalSystem<dim>::PhaseFieldCrystalSystem(unsigned int degree)
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
 {
-    const int n_across = 2;
-    const int n_down = 2;
-    const double left = -n_across * (2 / std::sqrt(3)) * M_PI * 2;
-    const double down = -n_down * 2 * M_PI;
+    const double a = 4 * M_PI / std::sqrt(3);
+
+    // const int n_across = 5;
+    // const int n_down = 5;
+    // const double left = -n_across * (2 / std::sqrt(3)) * M_PI * 2;
+    // const double down = -n_down * 2 * M_PI;
+    // const double left = -20 * a;
+    // const double down = -20 * std::sqrt(3) * a;
+    const double left = -6 * a;
+    const double down = -6 * a;
 
     dealii::Point<dim> p1 = {left, down};
     dealii::Point<dim> p2 = -p1;
@@ -155,7 +162,7 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
         for (unsigned int c = 0; c < 3; ++c)
             for (unsigned int d = 0; d < 3; ++d)
                 if ( ((c == 2) && (d == 0))
-                    ||((c == 1) && (d == 3)) )
+                    ||((c == 1) && (d == 2)) )
                     coupling[c][d] = dealii::DoFTools::none;
                 else
                     coupling[c][d] = dealii::DoFTools::always;
@@ -183,7 +190,21 @@ void PhaseFieldCrystalSystem<dim>::initialize_fe_field()
     double psi_0 = -0.43;
     double A_0 = 0.2 * (std::abs(psi_0)
                         + (1.0 / 3.0) * std::sqrt(-15 * eps - 36 * psi_0 * psi_0));
-    HexagonalLattice<dim> hexagonal_lattice(A_0, psi_0);
+
+    double a = 4 * M_PI / std::sqrt(3);
+
+    std::vector<dealii::Tensor<1, dim>> dislocation_positions;
+    dislocation_positions.push_back(dealii::Tensor<1, dim>({2 * a, 0}));
+    dislocation_positions.push_back(dealii::Tensor<1, dim>({-2 * a, 0}));
+
+    std::vector<dealii::Tensor<1, dim>> burgers_vectors;
+    burgers_vectors.push_back(dealii::Tensor<1, dim>({a, 0}));
+    burgers_vectors.push_back(dealii::Tensor<1, dim>({-a, 0}));
+
+    HexagonalLattice<dim> hexagonal_lattice(A_0, 
+                                            psi_0, 
+                                            dislocation_positions, 
+                                            burgers_vectors);
 
     dealii::VectorTools::project(dof_handler,
                                  constraints,
@@ -354,19 +375,50 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
     A_inv.factorize(system_matrix);
     A_inv.vmult(dPsi_n, system_rhs);
 
-    // dealii::SparseDirectUMFPACK M_chi_inv;
-    // M_chi_inv.factorize(system_matrix.block(1, 1));
+    // dealii::FullMatrix<double> psi_matrix;
 
-    // dealii::SparseDirectUMFPACK M_phi_inv;
-    // M_phi_inv.factorize(system_matrix.block(2, 2));
+    // dealii::FullMatrix<double> M_chi_inv;
+    // M_chi_inv.copy_from(system_matrix.block(1, 1));
+    // M_chi_inv.invert(M_chi_inv);
 
-    // PsiMatrix psi_matrix(system_matrix.block(0, 0),
-    //                      system_matrix.block(0, 1),
-    //                      system_matrix.block(0, 2),
-    //                      system_matrix.block(1, 0),
-    //                      system_matrix.block(2, 1),
-    //                      M_chi_inv,
-    //                      M_phi_inv);
+    // dealii::FullMatrix<double> M_phi_inv;
+    // M_phi_inv.copy_from(system_matrix.block(2, 2));
+    // M_phi_inv.invert(M_phi_inv);
+    // {
+    //     dealii::FullMatrix<double> E(system_rhs.block(1).size(),
+    //                                  system_rhs.block(0).size());
+    //     {
+    //         dealii::FullMatrix<double> L_psi;
+    //         L_psi.copy_from(system_matrix.block(1, 0));
+
+    //         M_chi_inv.mmult(E, L_psi);
+    //     }
+
+    //     dealii::FullMatrix<double> F(system_rhs.block(2).size(),
+    //                                  system_rhs.block(1).size());
+    //     {
+    //         dealii::FullMatrix<double> L_chi;
+    //         L_chi.copy_from(system_matrix.block(2, 1));
+    //         M_phi_inv.mmult(F, L_chi);
+    //     }
+
+    //     dealii::FullMatrix<double> C;
+    //     C.copy_from(system_matrix.block(0, 1));
+    //     C *= -1;
+
+    //     {
+    //         dealii::FullMatrix<double> D;
+    //         D.copy_from(system_matrix.block(0, 2));
+
+    //         D.mmult(C, F, true); 
+    //     }
+
+    //     C.mmult(C, E);
+
+    //     psi_matrix.copy_from(system_matrix.block(0, 0));
+    //     psi_matrix.add(1.0, C);
+    // }
+    // psi_matrix.invert(psi_matrix);
 
     // dealii::Vector<double> psi_rhs(system_rhs.block(0).size());
     // {
@@ -388,13 +440,27 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
     //     psi_rhs += system_rhs.block(0);
     // }
 
-    // dealii::SolverControl psi_solver_control(1000);
-    // dealii::SolverGMRES<dealii::Vector<double>> psi_solver(psi_solver_control);
-    // psi_solver.solve<PsiMatrix, dealii::PreconditionIdentity>
-    //                 (psi_matrix, 
-    //                  dPsi_n.block(0), 
-    //                  psi_rhs, 
-    //                  dealii::PreconditionIdentity());
+    // // dealii::SolverControl psi_solver_control(1000);
+    // // dealii::SolverGMRES<dealii::Vector<double>> psi_solver(psi_solver_control);
+    // // psi_solver.solve<PsiMatrix, dealii::PreconditionIdentity>
+    // //                 (psi_matrix, 
+    // //                  dPsi_n.block(0), 
+    // //                  psi_rhs, 
+    // //                  dealii::PreconditionIdentity());
+
+    // psi_matrix.vmult(dPsi_n.block(0), psi_rhs);
+
+    // dealii::Vector<double> chi_rhs(system_rhs.block(1));
+    // chi_rhs *= -1;
+    // system_matrix.block(1, 0).vmult_add(chi_rhs, dPsi_n.block(0));
+    // chi_rhs *= -1;
+    // M_chi_inv.vmult(dPsi_n.block(1), chi_rhs);
+
+    // dealii::Vector<double> phi_rhs(system_rhs.block(2));
+    // phi_rhs *= -1;
+    // system_matrix.block(2, 1).vmult_add(phi_rhs, dPsi_n.block(1));
+    // phi_rhs *= -1;
+    // M_phi_inv.vmult(dPsi_n.block(2), phi_rhs);
     
     constraints.distribute(dPsi_n);
     Psi_n += dPsi_n;
@@ -418,6 +484,7 @@ void PhaseFieldCrystalSystem<dim>::iterate_timestep()
         std::cout << "Solving and updating!\n";
         solve_and_update();
     }
+    Psi_n_1 = Psi_n;
 }
 
 
@@ -480,7 +547,7 @@ void PhaseFieldCrystalSystem<dim>::run(unsigned int n_refines)
     std::cout << "Initializing fe field!\n";
     initialize_fe_field();
 
-    const unsigned int n_timesteps = 10;
+    const unsigned int n_timesteps = 10000;
     for (unsigned int timestep = 0; timestep < n_timesteps; ++timestep)
     {
         std::cout << "Outputting configuration!\n";
@@ -490,8 +557,9 @@ void PhaseFieldCrystalSystem<dim>::run(unsigned int n_refines)
         output_rhs(timestep);
 
 
-        std::cout << "Iterating timestep!\n";
+        std::cout << "Iterating timestep: " << timestep << "\n";
         iterate_timestep();
+        std::cout << "\n";
     }
 }
 
