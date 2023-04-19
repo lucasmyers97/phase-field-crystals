@@ -194,12 +194,12 @@ void PhaseFieldCrystalSystem<dim>::initialize_fe_field()
     double a = 4 * M_PI / std::sqrt(3);
 
     std::vector<dealii::Tensor<1, dim>> dislocation_positions;
-    dislocation_positions.push_back(dealii::Tensor<1, dim>({2 * a, 0}));
-    dislocation_positions.push_back(dealii::Tensor<1, dim>({-2 * a, 0}));
+    // dislocation_positions.push_back(dealii::Tensor<1, dim>({2 * a, 0}));
+    // dislocation_positions.push_back(dealii::Tensor<1, dim>({-2 * a, 0}));
 
     std::vector<dealii::Tensor<1, dim>> burgers_vectors;
-    burgers_vectors.push_back(dealii::Tensor<1, dim>({a, 0}));
-    burgers_vectors.push_back(dealii::Tensor<1, dim>({-a, 0}));
+    // burgers_vectors.push_back(dealii::Tensor<1, dim>({a, 0}));
+    // burgers_vectors.push_back(dealii::Tensor<1, dim>({-a, 0}));
 
     HexagonalLattice<dim> hexagonal_lattice(A_0, 
                                             psi_0, 
