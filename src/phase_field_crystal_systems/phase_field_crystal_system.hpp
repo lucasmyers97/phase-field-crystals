@@ -32,8 +32,8 @@ private:
     dealii::FESystem<dim> fe_system;
     dealii::DoFHandler<dim> dof_handler;
     
-    dealii::IndexSet locally_owned_dofs;
-    dealii::IndexSet locally_relevant_dofs;
+    std::vector<dealii::IndexSet> owned_partitioning;
+    std::vector<dealii::IndexSet> relevant_partitioning;
 
     dealii::AffineConstraints<double> constraints;
     dealii::BlockSparsityPattern sparsity_pattern;
