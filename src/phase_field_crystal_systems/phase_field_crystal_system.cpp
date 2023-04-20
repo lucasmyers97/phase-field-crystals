@@ -318,6 +318,9 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 
     for (const auto &cell : dof_handler.active_cell_iterators())
     {
+        if (!cell->is_locally_owned())
+            continue;
+
         fe_values.reinit(cell);
         local_matrix = 0;
         local_rhs = 0;
@@ -417,6 +420,9 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
                                                system_matrix,
                                                system_rhs);
     }
+
+    system_matrix.compress(dealii::VectorOperation::add);
+    system_rhs.compress(dealii::VectorOperation::add);
 }
 
 
