@@ -1,7 +1,14 @@
 #ifndef PHASE_FIELD_CRYSTAL_SYSTEM
 #define PHASE_FIELD_CRYSTAL_SYSTEM
 
+#include <deal.II/base/mpi.h>
+#include <deal.II/base/index_set.h>
+#include <deal.II/base/timer.h>
+#include <deal.II/base/conditional_ostream.h>
+
 #include <deal.II/grid/tria.h>
+#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/grid_refinement.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/dofs/dof_handler.h>
 
@@ -9,6 +16,7 @@
 #include <deal.II/lac/block_vector.h>
 #include <deal.II/lac/block_sparse_matrix.h>
 #include <deal.II/lac/affine_constraints.h>
+#include <deal.II/lac/generic_linear_algebra.h>
 
 template <int dim>
 class PhaseFieldCrystalSystem
@@ -18,18 +26,26 @@ public:
     void run(unsigned int n_refines);
 
 private:
-    dealii::Triangulation<dim> triangulation;
+    MPI_Comm mpi_communicator;
+
+    dealii::parallel::distributed::Triangulation<dim> triangulation;
     dealii::FESystem<dim> fe_system;
     dealii::DoFHandler<dim> dof_handler;
+    
+    dealii::IndexSet locally_owned_dofs;
+    dealii::IndexSet locally_relevant_dofs;
 
     dealii::AffineConstraints<double> constraints;
     dealii::BlockSparsityPattern sparsity_pattern;
-    dealii::BlockSparseMatrix<double> system_matrix;
-    dealii::BlockVector<double> system_rhs;
-    dealii::BlockVector<double> dPsi_n;
+    dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix system_matrix;
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector system_rhs;
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n;
 
-    dealii::BlockVector<double> Psi_n;
-    dealii::BlockVector<double> Psi_n_1;
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n;
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n_1;
+
+    dealii::ConditionalOStream pcout;
+    dealii::TimerOutput timer;
 
     double dt = 0.1;
     double theta = 0.5;
