@@ -6,6 +6,7 @@
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/subscriptor.h>
 #include <deal.II/base/tensor.h>
+#include <deal.II/base/timer.h>
 #include <deal.II/base/types.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
@@ -146,31 +147,58 @@ void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::setup_dofs()
 {
-    system_matrix.clear();
-
     dof_handler.distribute_dofs(fe_system);
 
     std::vector<unsigned int> block_component = {0, 1, 2};
     dealii::DoFRenumbering::component_wise(dof_handler, block_component);
 
-    constraints.clear();
-    dealii::DoFTools::make_hanging_node_constraints(dof_handler, constraints);
-    dealii::DoFTools::make_periodicity_constraints(dof_handler,
-                                                   /*b_id1*/ 0,
-                                                   /*b_id2*/ 1,
-                                                   /*direction*/ 0,
-                                                   constraints);
-    dealii::DoFTools::make_periodicity_constraints(dof_handler,
-                                                   /*b_id1*/ 2,
-                                                   /*b_id2*/ 3,
-                                                   /*direction*/ 1,
-                                                   constraints);
-    constraints.close();
-
     const std::vector<dealii::types::global_dof_index> 
         dofs_per_block = dealii::DoFTools::count_dofs_per_fe_block(dof_handler, block_component);
+
+    const dealii::types::global_dof_index n_psi = dofs_per_block[0];
+    const dealii::types::global_dof_index n_chi = dofs_per_block[1];
+    const dealii::types::global_dof_index n_phi = dofs_per_block[2];
+
+    owned_partitioning.resize(3);
+    owned_partitioning[0] = dof_handler
+                            .locally_owned_dofs()
+                            .get_view(0, n_psi);
+    owned_partitioning[1] = dof_handler
+                            .locally_owned_dofs()
+                            .get_view(n_psi, n_psi + n_chi);
+    owned_partitioning[2] = dof_handler
+                            .locally_owned_dofs()
+                            .get_view(n_psi + n_chi, n_psi + n_chi + n_phi);
+
+    const dealii::IndexSet locally_relevant_dofs =
+        dealii::DoFTools::extract_locally_relevant_dofs(dof_handler);
+    relevant_partitioning.resize(3);
+    relevant_partitioning[0] = dof_handler
+                               .locally_owned_dofs()
+                               .get_view(0, n_psi);
+    relevant_partitioning[1] = dof_handler
+                               .locally_owned_dofs()
+                               .get_view(n_psi, n_psi + n_chi);
+    relevant_partitioning[2] = dof_handler
+                               .locally_owned_dofs()
+                               .get_view(n_psi + n_chi, n_psi + n_chi + n_phi);
     {
-        dealii::BlockDynamicSparsityPattern dsp(dofs_per_block, dofs_per_block);
+        constraints.clear();
+        constraints.reinit(locally_relevant_dofs);
+        dealii::DoFTools::make_hanging_node_constraints(dof_handler, constraints);
+        dealii::DoFTools::make_periodicity_constraints(dof_handler,
+                                                       /*b_id1*/ 0,
+                                                       /*b_id2*/ 1,
+                                                       /*direction*/ 0,
+                                                       constraints);
+        dealii::DoFTools::make_periodicity_constraints(dof_handler,
+                                                       /*b_id1*/ 2,
+                                                       /*b_id2*/ 3,
+                                                       /*direction*/ 1,
+                                                       constraints);
+        constraints.close();
+    }
+    {
         dealii::Table<2, dealii::DoFTools::Coupling> coupling(3, 3);
         for (unsigned int c = 0; c < 3; ++c)
             for (unsigned int d = 0; d < 3; ++d)
@@ -180,19 +208,26 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
                 else
                     coupling[c][d] = dealii::DoFTools::always;
 
+        dealii::BlockDynamicSparsityPattern dsp(relevant_partitioning);
         dealii::DoFTools::make_sparsity_pattern(dof_handler, 
                                                 coupling, 
                                                 dsp, 
                                                 constraints, 
                                                 /*keep_constrained_dofs*/false);
-        sparsity_pattern.copy_from(dsp);
-    }
-    system_matrix.reinit(sparsity_pattern);
+        dealii::SparsityTools::distribute_sparsity_pattern(
+            dsp,
+            dof_handler.locally_owned_dofs(),
+            mpi_communicator,
+            locally_relevant_dofs);
 
-    system_rhs.reinit(dofs_per_block);
-    dPsi_n.reinit(dofs_per_block);
-    Psi_n.reinit(dofs_per_block);
-    Psi_n_1.reinit(dofs_per_block);
+        system_matrix.reinit(owned_partitioning, dsp, mpi_communicator);
+    }
+
+    system_rhs.reinit(owned_partitioning, mpi_communicator);
+    dPsi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
+
+    Psi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
+    Psi_n_1.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
 }
 
 
