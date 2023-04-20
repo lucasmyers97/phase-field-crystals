@@ -1,5 +1,7 @@
 #include "phase_field_crystal_system.hpp"
 
+#include <deal.II/base/mpi.h>
+
 #include <deal.II/base/array_view.h>
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/subscriptor.h>
@@ -96,10 +98,21 @@ void PsiMatrix::vmult(dealii::Vector<double> &dst, dealii::Vector<double> &src) 
 
 template <int dim>
 PhaseFieldCrystalSystem<dim>::PhaseFieldCrystalSystem(unsigned int degree)
-    : fe_system(dealii::FE_Q<dim>(degree), 1,
+    : mpi_communicator(MPI_COMM_WORLD)
+    , triangulation(mpi_communicator,
+                    typename dealii::Triangulation<dim>::MeshSmoothing(
+                    dealii::Triangulation<dim>::smoothing_on_refinement |
+                    dealii::Triangulation<dim>::smoothing_on_coarsening))
+    , fe_system(dealii::FE_Q<dim>(degree), 1,
                 dealii::FE_Q<dim>(degree), 1,
                 dealii::FE_Q<dim>(degree), 1)
     , dof_handler(triangulation)
+    , pcout(std::cout,
+            (dealii::Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
+    , timer(mpi_communicator,
+            pcout,
+            dealii::TimerOutput::never,
+            dealii::TimerOutput::wall_times)
 {}
 
 
