@@ -225,9 +225,6 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
 
     system_rhs.reinit(owned_partitioning, mpi_communicator);
     dPsi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
-
-    Psi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
-    Psi_n_1.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
 }
 
 
@@ -254,12 +251,20 @@ void PhaseFieldCrystalSystem<dim>::initialize_fe_field()
                                             dislocation_positions, 
                                             burgers_vectors);
 
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_0(owned_partitioning, 
+                                                          mpi_communicator);
+
     dealii::VectorTools::project(dof_handler,
                                  constraints,
                                  dealii::QGauss<dim>(fe_system.degree + 1),
                                  hexagonal_lattice,
-                                 Psi_n);
-    Psi_n_1 = Psi_n;
+                                 Psi_0);
+
+    Psi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
+    Psi_n_1.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
+
+    Psi_n = Psi_0;
+    Psi_n_1 = Psi_0;
 }
 
 
