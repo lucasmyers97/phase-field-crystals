@@ -31,6 +31,7 @@
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/precondition.h>
 
+#include <deal.II/numerics/vector_tools_interpolate.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -253,12 +254,11 @@ void PhaseFieldCrystalSystem<dim>::initialize_fe_field()
 
     dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_0(owned_partitioning, 
                                                           mpi_communicator);
-
-    dealii::VectorTools::project(dof_handler,
-                                 constraints,
-                                 dealii::QGauss<dim>(fe_system.degree + 1),
-                                 hexagonal_lattice,
-                                 Psi_0);
+    dealii::VectorTools::interpolate(dof_handler,
+                                     hexagonal_lattice,
+                                     Psi_0);
+    constraints.distribute(Psi_0);
+    Psi_0.compress(dealii::VectorOperation::insert);
 
     Psi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
     Psi_n_1.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
@@ -430,7 +430,7 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
-    dealii::SolverControl solver_control;
+    dealii::SolverControl solver_control(200);
     dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::BlockVector>
         solver_gmres(solver_control);
 
@@ -487,10 +487,9 @@ void PhaseFieldCrystalSystem<dim>::output_configuration(unsigned int iteration)
                              data_component_interpretation);
     data_out.build_patches();
 
-    std::ofstream output(std::string("phase_field_") 
-                         + std::to_string(iteration)
-                         + std::string(".vtu"));
-    data_out.write_vtu(output);
+    data_out.write_vtu_with_pvtu_record("./", "phase_field_", iteration,
+                                        mpi_communicator,
+                                        /*n_digits_for_counter*/2);
 }
 
 
@@ -510,10 +509,9 @@ void PhaseFieldCrystalSystem<dim>::output_rhs(unsigned int iteration)
                              data_component_interpretation);
     data_out.build_patches();
 
-    std::ofstream output(std::string("phase_field_rhs_") 
-                         + std::to_string(iteration)
-                         + std::string(".vtu"));
-    data_out.write_vtu(output);
+    data_out.write_vtu_with_pvtu_record("./", "phase_field_rhs_", iteration,
+                                        mpi_communicator,
+                                        /*n_digits_for_counter*/2);
 }
 
 
