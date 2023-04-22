@@ -20,6 +20,7 @@
 
 #include <deal.II/grid/tria.h>
 #include <deal.II/lac/block_sparsity_pattern.h>
+#include <deal.II/lac/generic_linear_algebra.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/numerics/data_component_interpretation.h>
 #include <deal.II/numerics/vector_tools.h>
@@ -224,7 +225,6 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
     }
 
     system_rhs.reinit(owned_partitioning, mpi_communicator);
-    dPsi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
 }
 
 
@@ -430,99 +430,23 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
-    dealii::SparseDirectUMFPACK A_inv;
-    A_inv.factorize(system_matrix);
-    A_inv.vmult(dPsi_n, system_rhs);
+    dealii::SolverControl solver_control;
+    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::BlockVector>
+        solver_gmres(solver_control);
 
-    // dealii::FullMatrix<double> psi_matrix;
-
-    // dealii::FullMatrix<double> M_chi_inv;
-    // M_chi_inv.copy_from(system_matrix.block(1, 1));
-    // M_chi_inv.invert(M_chi_inv);
-
-    // dealii::FullMatrix<double> M_phi_inv;
-    // M_phi_inv.copy_from(system_matrix.block(2, 2));
-    // M_phi_inv.invert(M_phi_inv);
-    // {
-    //     dealii::FullMatrix<double> E(system_rhs.block(1).size(),
-    //                                  system_rhs.block(0).size());
-    //     {
-    //         dealii::FullMatrix<double> L_psi;
-    //         L_psi.copy_from(system_matrix.block(1, 0));
-
-    //         M_chi_inv.mmult(E, L_psi);
-    //     }
-
-    //     dealii::FullMatrix<double> F(system_rhs.block(2).size(),
-    //                                  system_rhs.block(1).size());
-    //     {
-    //         dealii::FullMatrix<double> L_chi;
-    //         L_chi.copy_from(system_matrix.block(2, 1));
-    //         M_phi_inv.mmult(F, L_chi);
-    //     }
-
-    //     dealii::FullMatrix<double> C;
-    //     C.copy_from(system_matrix.block(0, 1));
-    //     C *= -1;
-
-    //     {
-    //         dealii::FullMatrix<double> D;
-    //         D.copy_from(system_matrix.block(0, 2));
-
-    //         D.mmult(C, F, true); 
-    //     }
-
-    //     C.mmult(C, E);
-
-    //     psi_matrix.copy_from(system_matrix.block(0, 0));
-    //     psi_matrix.add(1.0, C);
-    // }
-    // psi_matrix.invert(psi_matrix);
-
-    // dealii::Vector<double> psi_rhs(system_rhs.block(0).size());
-    // {
-    //     dealii::Vector<double> tmp_psi(system_rhs.block(0).size());
-    //     dealii::Vector<double> tmp_chi(system_rhs.block(1).size());
-    //     dealii::Vector<double> tmp_phi_1(system_rhs.block(2).size());
-    //     dealii::Vector<double> tmp_phi_2(system_rhs.block(2).size());
-
-    //     M_chi_inv.vmult(tmp_chi, system_rhs.block(1));
-
-    //     system_matrix.block(2, 1).vmult(tmp_phi_1, tmp_chi);
-    //     tmp_phi_1 -= system_rhs.block(2);
-    //     M_phi_inv.vmult(tmp_phi_2, tmp_phi_1);
-    //     system_matrix.block(0, 2).vmult(psi_rhs, tmp_phi_2);
-
-    //     system_matrix.block(0, 1).vmult(tmp_psi, tmp_chi);
-
-    //     psi_rhs -= tmp_psi;
-    //     psi_rhs += system_rhs.block(0);
-    // }
-
-    // // dealii::SolverControl psi_solver_control(1000);
-    // // dealii::SolverGMRES<dealii::Vector<double>> psi_solver(psi_solver_control);
-    // // psi_solver.solve<PsiMatrix, dealii::PreconditionIdentity>
-    // //                 (psi_matrix, 
-    // //                  dPsi_n.block(0), 
-    // //                  psi_rhs, 
-    // //                  dealii::PreconditionIdentity());
-
-    // psi_matrix.vmult(dPsi_n.block(0), psi_rhs);
-
-    // dealii::Vector<double> chi_rhs(system_rhs.block(1));
-    // chi_rhs *= -1;
-    // system_matrix.block(1, 0).vmult_add(chi_rhs, dPsi_n.block(0));
-    // chi_rhs *= -1;
-    // M_chi_inv.vmult(dPsi_n.block(1), chi_rhs);
-
-    // dealii::Vector<double> phi_rhs(system_rhs.block(2));
-    // phi_rhs *= -1;
-    // system_matrix.block(2, 1).vmult_add(phi_rhs, dPsi_n.block(1));
-    // phi_rhs *= -1;
-    // M_phi_inv.vmult(dPsi_n.block(2), phi_rhs);
-    
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n(owned_partitioning, 
+                                                           mpi_communicator);
+    solver_gmres.solve(system_matrix,
+                       dPsi_n,
+                       system_rhs,
+                       dealii::PreconditionIdentity());
     constraints.distribute(dPsi_n);
-    Psi_n += dPsi_n;
+
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector 
+        local_Psi_n(owned_partitioning, mpi_communicator);
+    local_Psi_n = Psi_n;
+    local_Psi_n += dPsi_n;
+    Psi_n = local_Psi_n;
 }
 
 

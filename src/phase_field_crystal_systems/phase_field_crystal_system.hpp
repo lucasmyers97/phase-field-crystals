@@ -39,7 +39,6 @@ private:
     dealii::BlockSparsityPattern sparsity_pattern;
     dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix system_matrix;
     dealii::LinearAlgebraTrilinos::MPI::BlockVector system_rhs;
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n;
 
     dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n;
     dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n_1;
