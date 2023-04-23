@@ -8,6 +8,7 @@
 #include <deal.II/base/tensor.h>
 #include <deal.II/base/timer.h>
 #include <deal.II/base/types.h>
+#include <deal.II/distributed/tria.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
 
@@ -132,7 +133,7 @@ void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
     // const double left = -20 * a;
     // const double down = -20 * std::sqrt(3) * a;
     const double left = -6 * a;
-    const double down = -6 * a;
+    const double down = -5 * a;
 
     dealii::Point<dim> p1 = {left, down};
     dealii::Point<dim> p2 = -p1;
@@ -141,6 +142,28 @@ void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
                                            p1, 
                                            p2, 
                                            /*colorize*/ true);
+
+    using PeriodicFaces
+        = std::vector<dealii::GridTools::PeriodicFacePair<
+            typename dealii::parallel::distributed::Triangulation<dim>::cell_iterator
+                >
+            >;
+
+    PeriodicFaces x_periodic_faces;
+    PeriodicFaces y_periodic_faces;
+    dealii::GridTools::collect_periodic_faces(triangulation,
+                                              /*b_id1*/ 0,
+                                              /*b_id2*/ 1,
+                                              /*direction*/ 0,
+                                              x_periodic_faces);
+    dealii::GridTools::collect_periodic_faces(triangulation,
+                                              /*b_id1*/ 2,
+                                              /*b_id2*/ 3,
+                                              /*direction*/ 1,
+                                              y_periodic_faces);
+
+    triangulation.add_periodicity(x_periodic_faces);
+    triangulation.add_periodicity(y_periodic_faces);
     triangulation.refine_global(n_refines);
 }
 
@@ -175,29 +198,42 @@ void PhaseFieldCrystalSystem<dim>::setup_dofs()
     const dealii::IndexSet locally_relevant_dofs =
         dealii::DoFTools::extract_locally_relevant_dofs(dof_handler);
     relevant_partitioning.resize(3);
-    relevant_partitioning[0] = dof_handler
-                               .locally_owned_dofs()
+    relevant_partitioning[0] = locally_relevant_dofs
                                .get_view(0, n_psi);
-    relevant_partitioning[1] = dof_handler
-                               .locally_owned_dofs()
+    relevant_partitioning[1] = locally_relevant_dofs
                                .get_view(n_psi, n_psi + n_chi);
-    relevant_partitioning[2] = dof_handler
-                               .locally_owned_dofs()
+    relevant_partitioning[2] = locally_relevant_dofs
                                .get_view(n_psi + n_chi, n_psi + n_chi + n_phi);
     {
         constraints.clear();
         constraints.reinit(locally_relevant_dofs);
         dealii::DoFTools::make_hanging_node_constraints(dof_handler, constraints);
-        dealii::DoFTools::make_periodicity_constraints(dof_handler,
-                                                       /*b_id1*/ 0,
-                                                       /*b_id2*/ 1,
-                                                       /*direction*/ 0,
-                                                       constraints);
-        dealii::DoFTools::make_periodicity_constraints(dof_handler,
-                                                       /*b_id1*/ 2,
-                                                       /*b_id2*/ 3,
-                                                       /*direction*/ 1,
-                                                       constraints);
+
+        using PeriodicFaces
+            = std::vector<dealii::GridTools::PeriodicFacePair<
+                typename dealii::DoFHandler<dim>::cell_iterator
+                    >
+                >;
+
+        PeriodicFaces x_periodic_faces;
+        PeriodicFaces y_periodic_faces;
+        dealii::GridTools::collect_periodic_faces(dof_handler,
+                                                  /*b_id1*/ 0,
+                                                  /*b_id2*/ 1,
+                                                  /*direction*/ 0,
+                                                  x_periodic_faces);
+        dealii::GridTools::collect_periodic_faces(dof_handler,
+                                                  /*b_id1*/ 2,
+                                                  /*b_id2*/ 3,
+                                                  /*direction*/ 1,
+                                                  y_periodic_faces);
+
+        dealii::DoFTools::
+            make_periodicity_constraints<dim, dim>(x_periodic_faces,
+                                                   constraints);
+        dealii::DoFTools::
+            make_periodicity_constraints<dim, dim>(y_periodic_faces,
+                                                   constraints);
         constraints.close();
     }
     {
@@ -318,7 +354,7 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 
     for (const auto &cell : dof_handler.active_cell_iterators())
     {
-        if (!cell->is_locally_owned())
+        if (!(cell->is_locally_owned()))
             continue;
 
         fe_values.reinit(cell);
@@ -430,7 +466,7 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
-    dealii::SolverControl solver_control(200);
+    dealii::SolverControl solver_control(600);
     dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::BlockVector>
         solver_gmres(solver_control);
 
@@ -456,15 +492,15 @@ void PhaseFieldCrystalSystem<dim>::iterate_timestep()
 {
     for (unsigned int n_iters = 0; n_iters < simulation_max_iters; ++n_iters)
     {
-        std::cout << "Assembling system!\n";
+        pcout << "Assembling system!\n";
         assemble_system();
 
         const double residual = system_rhs.l2_norm();
-        std::cout << "Residual is: " << residual << "\n";
+        pcout << "Residual is: " << residual << "\n";
         if (residual < simulation_tol)
             break;
 
-        std::cout << "Solving and updating!\n";
+        pcout << "Solving and updating!\n";
         solve_and_update();
     }
     Psi_n_1 = Psi_n;
@@ -519,28 +555,28 @@ void PhaseFieldCrystalSystem<dim>::output_rhs(unsigned int iteration)
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::run(unsigned int n_refines)
 {
-    std::cout << "Making grid!\n";
+    pcout << "Making grid!\n";
     make_grid(n_refines);
 
-    std::cout << "Setting up dofs!\n";
+    pcout << "Setting up dofs!\n";
     setup_dofs();
 
-    std::cout << "Initializing fe field!\n";
+    pcout << "Initializing fe field!\n";
     initialize_fe_field();
 
     const unsigned int n_timesteps = 10000;
     for (unsigned int timestep = 0; timestep < n_timesteps; ++timestep)
     {
-        std::cout << "Outputting configuration!\n";
+        pcout << "Outputting configuration!\n";
         output_configuration(timestep);
 
-        std::cout << "Outputting right-hand side!\n";
+        pcout << "Outputting right-hand side!\n";
         output_rhs(timestep);
 
 
-        std::cout << "Iterating timestep: " << timestep << "\n";
+        pcout << "\n";
+        pcout << "Iterating timestep: " << timestep << "\n";
         iterate_timestep();
-        std::cout << "\n";
     }
 }
 

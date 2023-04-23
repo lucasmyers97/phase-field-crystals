@@ -7,7 +7,7 @@ int main(int ac, char* av[])
 {
     constexpr int dim = 2;
     constexpr unsigned int degree = 1;
-    constexpr unsigned int n_refines = 6;
+    constexpr unsigned int n_refines = 8;
 
     dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(ac, av, 1);
 
