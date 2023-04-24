@@ -40,67 +40,6 @@
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 
-class PsiMatrix : public dealii::Subscriptor
-{
-public:
-    PsiMatrix(const dealii::SparseMatrix<double> &B,
-              const dealii::SparseMatrix<double> &C,
-              const dealii::SparseMatrix<double> &D,
-              const dealii::SparseMatrix<double> &L_psi,
-              const dealii::SparseMatrix<double> &L_chi,
-              const dealii::LinearOperator<dealii::Vector<double>,
-                                           dealii::Vector<double>> &M_chi_inv,
-              const dealii::LinearOperator<dealii::Vector<double>,
-                                           dealii::Vector<double>> &M_phi_inv)
-        : B(B)
-        , C(C)
-        , D(D)
-        , L_psi(L_psi)
-        , L_chi(L_chi)
-        , M_chi_inv(M_chi_inv)
-        , M_phi_inv(M_phi_inv)
-    {};
-
-    void vmult(dealii::Vector<double> &dst, dealii::Vector<double> &src) const;
-
-private:
-    const dealii::SparseMatrix<double> &B;
-    const dealii::SparseMatrix<double> &C;
-    const dealii::SparseMatrix<double> &D;
-    const dealii::SparseMatrix<double> &L_psi;
-    const dealii::SparseMatrix<double> &L_chi;
-    const dealii::LinearOperator<dealii::Vector<double>,
-                                 dealii::Vector<double>> &M_chi_inv;
-    const dealii::LinearOperator<dealii::Vector<double>,
-                                 dealii::Vector<double>> &M_phi_inv;
-};
-
-
-
-void PsiMatrix::vmult(dealii::Vector<double> &dst, dealii::Vector<double> &src) const
-{
-    dealii::Vector<double> tmp_psi(src.size());
-    dealii::Vector<double> tmp_chi_1(L_psi.m());
-    dealii::Vector<double> tmp_chi_2(L_psi.m());
-    dealii::Vector<double> tmp_phi_1(L_chi.m());
-    dealii::Vector<double> tmp_phi_2(L_chi.m());
-
-    L_psi.vmult(tmp_chi_1, src);
-    M_chi_inv.vmult(tmp_chi_2, tmp_chi_1);
-
-    C.vmult(tmp_psi, tmp_chi_2);
-
-    L_chi.vmult(tmp_phi_1, tmp_chi_2);
-    M_phi_inv.vmult(tmp_phi_2, tmp_phi_1);
-    D.vmult(dst, tmp_phi_2);
-
-    dst -= tmp_psi;
-
-    B.vmult(tmp_psi, src);
-
-    dst += tmp_psi;
-}
-
 
 
 template <int dim>
@@ -383,27 +322,31 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
     dealii::FullMatrix<double> psi_matrix;
 
     const auto op_M_chi = dealii::linear_operator(system_matrix.block(1, 1));
-    dealii::PreconditionIdentity op_Id;
+    dealii::PreconditionJacobi<dealii::SparseMatrix<double>> precondition_M_chi;
+    precondition_M_chi.initialize(system_matrix.block(1, 1));
+
     dealii::ReductionControl reduction_control_M_chi(2000, 1e-18, 1e-10);
     dealii::SolverCG<dealii::Vector<double>> solver_cg_chi(reduction_control_M_chi);
     const auto M_chi_inv = dealii::inverse_operator(op_M_chi, 
                                                     solver_cg_chi, 
-                                                    op_Id);
+                                                    precondition_M_chi);
 
     const auto op_M_phi = dealii::linear_operator(system_matrix.block(1, 1));
+    dealii::PreconditionJacobi<dealii::SparseMatrix<double>> precondition_M_phi;
+    precondition_M_phi.initialize(system_matrix.block(2, 2));
+
     dealii::ReductionControl reduction_control_M_phi(2000, 1e-18, 1e-10);
     dealii::SolverCG<dealii::Vector<double>> solver_cg_phi(reduction_control_M_phi);
     const auto M_phi_inv = dealii::inverse_operator(op_M_phi, 
                                                     solver_cg_phi, 
-                                                    op_Id);
+                                                    precondition_M_phi);
+    const auto B = dealii::linear_operator(system_matrix.block(0, 0));
+    const auto C = dealii::linear_operator(system_matrix.block(0, 1));
+    const auto D = dealii::linear_operator(system_matrix.block(0, 2));
+    const auto L_psi = dealii::linear_operator(system_matrix.block(1, 0));
+    const auto L_chi = dealii::linear_operator(system_matrix.block(2, 1));
 
-    PsiMatrix psi_matrix_d(system_matrix.block(0, 0),
-                           system_matrix.block(0, 1),
-                           system_matrix.block(0, 2),
-                           system_matrix.block(1, 0),
-                           system_matrix.block(2, 1),
-                           M_chi_inv,
-                           M_phi_inv);
+    const auto psi_matrix_d = B + (D*M_phi_inv*L_chi - C) * M_chi_inv*L_psi;
 
     dealii::Vector<double> psi_rhs(system_rhs.block(0).size());
     {
