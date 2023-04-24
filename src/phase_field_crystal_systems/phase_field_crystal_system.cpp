@@ -329,7 +329,7 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
                                                     solver_cg_chi, 
                                                     precondition_M_chi);
 
-    const auto op_M_phi = dealii::linear_operator(system_matrix.block(1, 1));
+    const auto op_M_phi = dealii::linear_operator(system_matrix.block(2, 2));
     dealii::PreconditionJacobi<dealii::SparseMatrix<double>> precondition_M_phi;
     precondition_M_phi.initialize(system_matrix.block(2, 2));
 
