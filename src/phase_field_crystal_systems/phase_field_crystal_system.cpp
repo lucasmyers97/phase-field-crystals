@@ -360,17 +360,11 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
     dealii::SolverGMRES<dealii::Vector<double>> solver_gmres(solver_control);
     solver_gmres.solve(psi_matrix_d, dPsi_n.block(0), psi_rhs, dealii::PreconditionIdentity());
 
-    dealii::Vector<double> tmp_chi1(dPsi_n.block(1).size());
-    system_matrix.block(1, 0).vmult(tmp_chi1, dPsi_n.block(0));
-    tmp_chi1 -= system_rhs.block(1);
-    M_chi_inv.vmult(dPsi_n.block(1), tmp_chi1);
-    dPsi_n.block(1) *= -1;
+    const auto chi_rhs = M_chi_inv * (G - L_psi * dPsi_n.block(0));
+    chi_rhs.apply(dPsi_n.block(1));
 
-    dealii::Vector<double> tmp_phi1(dPsi_n.block(2).size());
-    system_matrix.block(2, 1).vmult(tmp_phi1, dPsi_n.block(1));
-    tmp_phi1 -= system_rhs.block(2);
-    M_phi_inv.vmult(dPsi_n.block(2), tmp_phi1);
-    dPsi_n.block(2) *= -1;
+    const auto phi_rhs = M_phi_inv * (H - L_chi * dPsi_n.block(1));
+    phi_rhs.apply(dPsi_n.block(2));
     
     constraints.distribute(dPsi_n);
     Psi_n += dPsi_n;
