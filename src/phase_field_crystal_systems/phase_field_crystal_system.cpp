@@ -1,5 +1,6 @@
 #include "phase_field_crystal_system.hpp"
 
+#include <cstdlib>
 #include <deal.II/base/array_view.h>
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/subscriptor.h>
@@ -17,6 +18,7 @@
 
 #include <deal.II/grid/tria.h>
 #include <deal.II/lac/block_sparsity_pattern.h>
+#include <deal.II/lac/full_matrix.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/numerics/data_component_interpretation.h>
 #include <deal.II/numerics/vector_tools.h>
@@ -115,8 +117,8 @@ void PhaseFieldCrystalSystem<dim>::make_grid(unsigned int n_refines)
     // const double down = -n_down * 2 * M_PI;
     // const double left = -20 * a;
     // const double down = -20 * std::sqrt(3) * a;
-    const double left = -6 * a;
-    const double down = -6 * a;
+    const double left = -2 * a;
+    const double down = -2 * a;
 
     dealii::Point<dim> p1 = {left, down};
     dealii::Point<dim> p2 = -p1;
@@ -371,96 +373,86 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
-    dealii::SparseDirectUMFPACK A_inv;
-    A_inv.factorize(system_matrix);
-    A_inv.vmult(dPsi_n, system_rhs);
+    dealii::FullMatrix<double> psi_matrix;
 
-    // dealii::FullMatrix<double> psi_matrix;
+    dealii::FullMatrix<double> M_chi_inv;
+    M_chi_inv.copy_from(system_matrix.block(1, 1));
+    M_chi_inv.invert(M_chi_inv);
 
-    // dealii::FullMatrix<double> M_chi_inv;
-    // M_chi_inv.copy_from(system_matrix.block(1, 1));
-    // M_chi_inv.invert(M_chi_inv);
+    dealii::FullMatrix<double> M_phi_inv;
+    M_phi_inv.copy_from(system_matrix.block(2, 2));
+    M_phi_inv.invert(M_phi_inv);
+    {
+        dealii::FullMatrix<double> E(system_rhs.block(1).size(),
+                                     system_rhs.block(0).size());
+        {
+            dealii::FullMatrix<double> L_psi;
+            L_psi.copy_from(system_matrix.block(1, 0));
 
-    // dealii::FullMatrix<double> M_phi_inv;
-    // M_phi_inv.copy_from(system_matrix.block(2, 2));
-    // M_phi_inv.invert(M_phi_inv);
-    // {
-    //     dealii::FullMatrix<double> E(system_rhs.block(1).size(),
-    //                                  system_rhs.block(0).size());
-    //     {
-    //         dealii::FullMatrix<double> L_psi;
-    //         L_psi.copy_from(system_matrix.block(1, 0));
+            M_chi_inv.mmult(E, L_psi);
+        }
 
-    //         M_chi_inv.mmult(E, L_psi);
-    //     }
+        dealii::FullMatrix<double> F(system_rhs.block(2).size(),
+                                     system_rhs.block(1).size());
+        {
+            dealii::FullMatrix<double> L_chi;
+            L_chi.copy_from(system_matrix.block(2, 1));
+            M_phi_inv.mmult(F, L_chi);
+        }
 
-    //     dealii::FullMatrix<double> F(system_rhs.block(2).size(),
-    //                                  system_rhs.block(1).size());
-    //     {
-    //         dealii::FullMatrix<double> L_chi;
-    //         L_chi.copy_from(system_matrix.block(2, 1));
-    //         M_phi_inv.mmult(F, L_chi);
-    //     }
+        dealii::FullMatrix<double> C;
+        C.copy_from(system_matrix.block(0, 1));
+        C *= -1;
 
-    //     dealii::FullMatrix<double> C;
-    //     C.copy_from(system_matrix.block(0, 1));
-    //     C *= -1;
+        {
+            dealii::FullMatrix<double> D;
+            D.copy_from(system_matrix.block(0, 2));
 
-    //     {
-    //         dealii::FullMatrix<double> D;
-    //         D.copy_from(system_matrix.block(0, 2));
+            D.mmult(C, F, true); 
+        }
 
-    //         D.mmult(C, F, true); 
-    //     }
+        dealii::FullMatrix<double> G(Psi_n.block(2).size(),
+                                     Psi_n.block(0).size());
+        C.mmult(G, E);
 
-    //     C.mmult(C, E);
+        psi_matrix.copy_from(system_matrix.block(0, 0));
+        psi_matrix.add(1.0, G);
+    }
+    psi_matrix.invert(psi_matrix);
 
-    //     psi_matrix.copy_from(system_matrix.block(0, 0));
-    //     psi_matrix.add(1.0, C);
-    // }
-    // psi_matrix.invert(psi_matrix);
+    dealii::Vector<double> psi_rhs(system_rhs.block(0).size());
+    {
+        dealii::Vector<double> tmp_psi(system_rhs.block(0).size());
+        dealii::Vector<double> tmp_chi(system_rhs.block(1).size());
+        dealii::Vector<double> tmp_phi_1(system_rhs.block(2).size());
+        dealii::Vector<double> tmp_phi_2(system_rhs.block(2).size());
 
-    // dealii::Vector<double> psi_rhs(system_rhs.block(0).size());
-    // {
-    //     dealii::Vector<double> tmp_psi(system_rhs.block(0).size());
-    //     dealii::Vector<double> tmp_chi(system_rhs.block(1).size());
-    //     dealii::Vector<double> tmp_phi_1(system_rhs.block(2).size());
-    //     dealii::Vector<double> tmp_phi_2(system_rhs.block(2).size());
+        M_chi_inv.vmult(tmp_chi, system_rhs.block(1));
 
-    //     M_chi_inv.vmult(tmp_chi, system_rhs.block(1));
+        system_matrix.block(2, 1).vmult(tmp_phi_1, tmp_chi);
+        tmp_phi_1 -= system_rhs.block(2);
+        M_phi_inv.vmult(tmp_phi_2, tmp_phi_1);
+        system_matrix.block(0, 2).vmult(psi_rhs, tmp_phi_2);
 
-    //     system_matrix.block(2, 1).vmult(tmp_phi_1, tmp_chi);
-    //     tmp_phi_1 -= system_rhs.block(2);
-    //     M_phi_inv.vmult(tmp_phi_2, tmp_phi_1);
-    //     system_matrix.block(0, 2).vmult(psi_rhs, tmp_phi_2);
+        system_matrix.block(0, 1).vmult(tmp_psi, tmp_chi);
 
-    //     system_matrix.block(0, 1).vmult(tmp_psi, tmp_chi);
+        psi_rhs -= tmp_psi;
+        psi_rhs += system_rhs.block(0);
+    }
 
-    //     psi_rhs -= tmp_psi;
-    //     psi_rhs += system_rhs.block(0);
-    // }
+    psi_matrix.vmult(dPsi_n.block(0), psi_rhs);
 
-    // // dealii::SolverControl psi_solver_control(1000);
-    // // dealii::SolverGMRES<dealii::Vector<double>> psi_solver(psi_solver_control);
-    // // psi_solver.solve<PsiMatrix, dealii::PreconditionIdentity>
-    // //                 (psi_matrix, 
-    // //                  dPsi_n.block(0), 
-    // //                  psi_rhs, 
-    // //                  dealii::PreconditionIdentity());
+    dealii::Vector<double> tmp_chi1(dPsi_n.block(1).size());
+    system_matrix.block(1, 0).vmult(tmp_chi1, dPsi_n.block(0));
+    tmp_chi1 -= system_rhs.block(1);
+    M_chi_inv.vmult(dPsi_n.block(1), tmp_chi1);
+    dPsi_n.block(1) *= -1;
 
-    // psi_matrix.vmult(dPsi_n.block(0), psi_rhs);
-
-    // dealii::Vector<double> chi_rhs(system_rhs.block(1));
-    // chi_rhs *= -1;
-    // system_matrix.block(1, 0).vmult_add(chi_rhs, dPsi_n.block(0));
-    // chi_rhs *= -1;
-    // M_chi_inv.vmult(dPsi_n.block(1), chi_rhs);
-
-    // dealii::Vector<double> phi_rhs(system_rhs.block(2));
-    // phi_rhs *= -1;
-    // system_matrix.block(2, 1).vmult_add(phi_rhs, dPsi_n.block(1));
-    // phi_rhs *= -1;
-    // M_phi_inv.vmult(dPsi_n.block(2), phi_rhs);
+    dealii::Vector<double> tmp_phi1(dPsi_n.block(2).size());
+    system_matrix.block(2, 1).vmult(tmp_phi1, dPsi_n.block(1));
+    tmp_phi1 -= system_rhs.block(2);
+    M_phi_inv.vmult(dPsi_n.block(2), tmp_phi1);
+    dPsi_n.block(2) *= -1;
     
     constraints.distribute(dPsi_n);
     Psi_n += dPsi_n;
@@ -547,7 +539,7 @@ void PhaseFieldCrystalSystem<dim>::run(unsigned int n_refines)
     std::cout << "Initializing fe field!\n";
     initialize_fe_field();
 
-    const unsigned int n_timesteps = 10000;
+    const unsigned int n_timesteps = 100;
     for (unsigned int timestep = 0; timestep < n_timesteps; ++timestep)
     {
         std::cout << "Outputting configuration!\n";
