@@ -32,16 +32,16 @@ private:
     dealii::FESystem<dim> fe_system;
     dealii::DoFHandler<dim> dof_handler;
     
-    std::vector<dealii::IndexSet> owned_partitioning;
-    std::vector<dealii::IndexSet> relevant_partitioning;
+    dealii::IndexSet locally_owned_dofs;
+    dealii::IndexSet locally_relevant_dofs;
 
     dealii::AffineConstraints<double> constraints;
     dealii::BlockSparsityPattern sparsity_pattern;
-    dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix system_matrix;
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector system_rhs;
+    dealii::LinearAlgebraTrilinos::MPI::SparseMatrix system_matrix;
+    dealii::LinearAlgebraTrilinos::MPI::Vector system_rhs;
 
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n;
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n_1;
+    dealii::LinearAlgebraTrilinos::MPI::Vector Psi_n;
+    dealii::LinearAlgebraTrilinos::MPI::Vector Psi_n_1;
 
     dealii::ConditionalOStream pcout;
     dealii::TimerOutput timer;

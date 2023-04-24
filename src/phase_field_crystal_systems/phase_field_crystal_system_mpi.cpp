@@ -174,36 +174,9 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
 {
     dof_handler.distribute_dofs(fe_system);
 
-    std::vector<unsigned int> block_component = {0, 1, 2};
-    dealii::DoFRenumbering::component_wise(dof_handler, block_component);
-
-    const std::vector<dealii::types::global_dof_index> 
-        dofs_per_block = dealii::DoFTools::count_dofs_per_fe_block(dof_handler, block_component);
-
-    const dealii::types::global_dof_index n_psi = dofs_per_block[0];
-    const dealii::types::global_dof_index n_chi = dofs_per_block[1];
-    const dealii::types::global_dof_index n_phi = dofs_per_block[2];
-
-    owned_partitioning.resize(3);
-    owned_partitioning[0] = dof_handler
-                            .locally_owned_dofs()
-                            .get_view(0, n_psi);
-    owned_partitioning[1] = dof_handler
-                            .locally_owned_dofs()
-                            .get_view(n_psi, n_psi + n_chi);
-    owned_partitioning[2] = dof_handler
-                            .locally_owned_dofs()
-                            .get_view(n_psi + n_chi, n_psi + n_chi + n_phi);
-
-    const dealii::IndexSet locally_relevant_dofs =
-        dealii::DoFTools::extract_locally_relevant_dofs(dof_handler);
-    relevant_partitioning.resize(3);
-    relevant_partitioning[0] = locally_relevant_dofs
-                               .get_view(0, n_psi);
-    relevant_partitioning[1] = locally_relevant_dofs
-                               .get_view(n_psi, n_psi + n_chi);
-    relevant_partitioning[2] = locally_relevant_dofs
-                               .get_view(n_psi + n_chi, n_psi + n_chi + n_phi);
+    locally_owned_dofs = dof_handler.locally_owned_dofs();
+    dealii::DoFTools::extract_locally_relevant_dofs(dof_handler,
+                                                    locally_relevant_dofs);
     {
         constraints.clear();
         constraints.reinit(locally_relevant_dofs);
@@ -237,18 +210,8 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
         constraints.close();
     }
     {
-        dealii::Table<2, dealii::DoFTools::Coupling> coupling(3, 3);
-        for (unsigned int c = 0; c < 3; ++c)
-            for (unsigned int d = 0; d < 3; ++d)
-                if ( ((c == 2) && (d == 0))
-                    ||((c == 1) && (d == 2)) )
-                    coupling[c][d] = dealii::DoFTools::none;
-                else
-                    coupling[c][d] = dealii::DoFTools::always;
-
-        dealii::BlockDynamicSparsityPattern dsp(relevant_partitioning);
+        dealii::DynamicSparsityPattern dsp(locally_relevant_dofs);
         dealii::DoFTools::make_sparsity_pattern(dof_handler, 
-                                                coupling, 
                                                 dsp, 
                                                 constraints, 
                                                 /*keep_constrained_dofs*/false);
@@ -258,10 +221,13 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
             mpi_communicator,
             locally_relevant_dofs);
 
-        system_matrix.reinit(owned_partitioning, dsp, mpi_communicator);
+        system_matrix.reinit(locally_owned_dofs,
+                             locally_owned_dofs,
+                             dsp,
+                             mpi_communicator);
     }
 
-    system_rhs.reinit(owned_partitioning, mpi_communicator);
+    system_rhs.reinit(locally_owned_dofs, mpi_communicator);
 }
 
 
@@ -288,16 +254,20 @@ void PhaseFieldCrystalSystemMPI<dim>::initialize_fe_field()
                                             dislocation_positions, 
                                             burgers_vectors);
 
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_0(owned_partitioning, 
-                                                          mpi_communicator);
+    dealii::LinearAlgebraTrilinos::MPI::Vector Psi_0(locally_owned_dofs, 
+                                                     mpi_communicator);
     dealii::VectorTools::interpolate(dof_handler,
                                      hexagonal_lattice,
                                      Psi_0);
     constraints.distribute(Psi_0);
     Psi_0.compress(dealii::VectorOperation::insert);
 
-    Psi_n.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
-    Psi_n_1.reinit(owned_partitioning, relevant_partitioning, mpi_communicator);
+    Psi_n.reinit(locally_owned_dofs, 
+                 locally_relevant_dofs, 
+                 mpi_communicator);
+    Psi_n_1.reinit(locally_owned_dofs, 
+                   locally_relevant_dofs, 
+                   mpi_communicator);
 
     Psi_n = Psi_0;
     Psi_n_1 = Psi_0;
@@ -467,19 +437,19 @@ template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
 {
     dealii::SolverControl solver_control(600);
-    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::BlockVector>
+    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::Vector>
         solver_gmres(solver_control);
 
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n(owned_partitioning, 
-                                                           mpi_communicator);
+    dealii::LinearAlgebraTrilinos::MPI::Vector dPsi_n(locally_owned_dofs, 
+                                                      mpi_communicator);
     solver_gmres.solve(system_matrix,
                        dPsi_n,
                        system_rhs,
                        dealii::PreconditionIdentity());
     constraints.distribute(dPsi_n);
 
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector 
-        local_Psi_n(owned_partitioning, mpi_communicator);
+    dealii::LinearAlgebraTrilinos::MPI::Vector local_Psi_n(locally_owned_dofs, 
+                                                           mpi_communicator);
     local_Psi_n = Psi_n;
     local_Psi_n += dPsi_n;
     Psi_n = local_Psi_n;
