@@ -1,7 +1,8 @@
-add_executable(phase_field_crystal_simulation phase_field_crystal_simulation.cpp)
+add_executable(phase_field_crystal_mpi_simulation
+    phase_field_crystal_mpi_simulation.cpp)
 
-target_link_libraries(phase_field_crystal_simulation
+target_link_libraries(phase_field_crystal_mpi_simulation
     PRIVATE
-    PhaseFieldCrystalSystem)
+    PhaseFieldCrystalSystemMPI)
 
-install(TARGETS phase_field_crystal_simulation DESTINATION bin)
+install(TARGETS phase_field_crystal_mpi_simulation DESTINATION bin)
