@@ -375,50 +375,18 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
     dealii::FullMatrix<double> psi_matrix;
 
-    dealii::FullMatrix<double> M_chi_inv;
-    M_chi_inv.copy_from(system_matrix.block(1, 1));
-    M_chi_inv.invert(M_chi_inv);
+    dealii::SparseDirectUMFPACK M_chi_inv;
+    M_chi_inv.factorize(system_matrix.block(1, 1));
+    dealii::SparseDirectUMFPACK M_phi_inv;
+    M_phi_inv.factorize(system_matrix.block(2, 2));
 
-    dealii::FullMatrix<double> M_phi_inv;
-    M_phi_inv.copy_from(system_matrix.block(2, 2));
-    M_phi_inv.invert(M_phi_inv);
-    {
-        dealii::FullMatrix<double> E(system_rhs.block(1).size(),
-                                     system_rhs.block(0).size());
-        {
-            dealii::FullMatrix<double> L_psi;
-            L_psi.copy_from(system_matrix.block(1, 0));
-
-            M_chi_inv.mmult(E, L_psi);
-        }
-
-        dealii::FullMatrix<double> F(system_rhs.block(2).size(),
-                                     system_rhs.block(1).size());
-        {
-            dealii::FullMatrix<double> L_chi;
-            L_chi.copy_from(system_matrix.block(2, 1));
-            M_phi_inv.mmult(F, L_chi);
-        }
-
-        dealii::FullMatrix<double> C;
-        C.copy_from(system_matrix.block(0, 1));
-        C *= -1;
-
-        {
-            dealii::FullMatrix<double> D;
-            D.copy_from(system_matrix.block(0, 2));
-
-            D.mmult(C, F, true); 
-        }
-
-        dealii::FullMatrix<double> G(Psi_n.block(2).size(),
-                                     Psi_n.block(0).size());
-        C.mmult(G, E);
-
-        psi_matrix.copy_from(system_matrix.block(0, 0));
-        psi_matrix.add(1.0, G);
-    }
-    psi_matrix.invert(psi_matrix);
+    PsiMatrix psi_matrix_d(system_matrix.block(0, 0),
+                           system_matrix.block(0, 1),
+                           system_matrix.block(0, 2),
+                           system_matrix.block(1, 0),
+                           system_matrix.block(2, 1),
+                           M_chi_inv,
+                           M_phi_inv);
 
     dealii::Vector<double> psi_rhs(system_rhs.block(0).size());
     {
@@ -439,8 +407,9 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
         psi_rhs -= tmp_psi;
         psi_rhs += system_rhs.block(0);
     }
-
-    psi_matrix.vmult(dPsi_n.block(0), psi_rhs);
+    dealii::SolverControl solver_control(500);
+    dealii::SolverGMRES<dealii::Vector<double>> solver_gmres(solver_control);
+    solver_gmres.solve(psi_matrix_d, dPsi_n.block(0), psi_rhs, dealii::PreconditionIdentity());
 
     dealii::Vector<double> tmp_chi1(dPsi_n.block(1).size());
     system_matrix.block(1, 0).vmult(tmp_chi1, dPsi_n.block(0));
