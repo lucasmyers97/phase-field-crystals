@@ -19,6 +19,8 @@
 #include <deal.II/grid/tria.h>
 #include <deal.II/lac/block_sparsity_pattern.h>
 #include <deal.II/lac/full_matrix.h>
+#include <deal.II/lac/linear_operator.h>
+#include <deal.II/lac/solver_cg.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/numerics/data_component_interpretation.h>
 #include <deal.II/numerics/vector_tools.h>
@@ -28,6 +30,7 @@
 #include <deal.II/lac/solver_control.h>
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/precondition.h>
+#include <deal.II/lac/linear_operator_tools.h>
 
 #include <fstream>
 #include <iostream>
@@ -45,8 +48,10 @@ public:
               const dealii::SparseMatrix<double> &D,
               const dealii::SparseMatrix<double> &L_psi,
               const dealii::SparseMatrix<double> &L_chi,
-              const dealii::SparseDirectUMFPACK &M_chi_inv,
-              const dealii::SparseDirectUMFPACK &M_phi_inv)
+              const dealii::LinearOperator<dealii::Vector<double>,
+                                           dealii::Vector<double>> &M_chi_inv,
+              const dealii::LinearOperator<dealii::Vector<double>,
+                                           dealii::Vector<double>> &M_phi_inv)
         : B(B)
         , C(C)
         , D(D)
@@ -64,8 +69,10 @@ private:
     const dealii::SparseMatrix<double> &D;
     const dealii::SparseMatrix<double> &L_psi;
     const dealii::SparseMatrix<double> &L_chi;
-    const dealii::SparseDirectUMFPACK &M_chi_inv;
-    const dealii::SparseDirectUMFPACK &M_phi_inv;
+    const dealii::LinearOperator<dealii::Vector<double>,
+                                 dealii::Vector<double>> &M_chi_inv;
+    const dealii::LinearOperator<dealii::Vector<double>,
+                                 dealii::Vector<double>> &M_phi_inv;
 };
 
 
@@ -375,10 +382,20 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
     dealii::FullMatrix<double> psi_matrix;
 
-    dealii::SparseDirectUMFPACK M_chi_inv;
-    M_chi_inv.factorize(system_matrix.block(1, 1));
-    dealii::SparseDirectUMFPACK M_phi_inv;
-    M_phi_inv.factorize(system_matrix.block(2, 2));
+    const auto op_M_chi = dealii::linear_operator(system_matrix.block(1, 1));
+    dealii::PreconditionIdentity op_Id;
+    dealii::ReductionControl reduction_control_M_chi(2000, 1e-18, 1e-10);
+    dealii::SolverCG<dealii::Vector<double>> solver_cg_chi(reduction_control_M_chi);
+    const auto M_chi_inv = dealii::inverse_operator(op_M_chi, 
+                                                    solver_cg_chi, 
+                                                    op_Id);
+
+    const auto op_M_phi = dealii::linear_operator(system_matrix.block(1, 1));
+    dealii::ReductionControl reduction_control_M_phi(2000, 1e-18, 1e-10);
+    dealii::SolverCG<dealii::Vector<double>> solver_cg_phi(reduction_control_M_phi);
+    const auto M_phi_inv = dealii::inverse_operator(op_M_phi, 
+                                                    solver_cg_phi, 
+                                                    op_Id);
 
     PsiMatrix psi_matrix_d(system_matrix.block(0, 0),
                            system_matrix.block(0, 1),
