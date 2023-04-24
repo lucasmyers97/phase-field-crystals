@@ -319,8 +319,6 @@ void PhaseFieldCrystalSystem<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystem<dim>::solve_and_update()
 {
-    dealii::FullMatrix<double> psi_matrix;
-
     const auto op_M_chi = dealii::linear_operator(system_matrix.block(1, 1));
     dealii::PreconditionJacobi<dealii::SparseMatrix<double>> precondition_M_chi;
     precondition_M_chi.initialize(system_matrix.block(1, 1));
@@ -346,7 +344,7 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
     const auto L_psi = dealii::linear_operator(system_matrix.block(1, 0));
     const auto L_chi = dealii::linear_operator(system_matrix.block(2, 1));
 
-    const auto psi_matrix_d = B + (D*M_phi_inv*L_chi - C) * M_chi_inv*L_psi;
+    const auto psi_matrix = B + (D*M_phi_inv*L_chi - C) * M_chi_inv*L_psi;
 
     const dealii::Vector<double>& F = system_rhs.block(0);
     const dealii::Vector<double>& G = system_rhs.block(1);
@@ -358,7 +356,7 @@ void PhaseFieldCrystalSystem<dim>::solve_and_update()
 
     dealii::SolverControl solver_control(500);
     dealii::SolverGMRES<dealii::Vector<double>> solver_gmres(solver_control);
-    solver_gmres.solve(psi_matrix_d, dPsi_n.block(0), psi_rhs, dealii::PreconditionIdentity());
+    solver_gmres.solve(psi_matrix, dPsi_n.block(0), psi_rhs, dealii::PreconditionIdentity());
 
     const auto chi_rhs = M_chi_inv * (G - L_psi * dPsi_n.block(0));
     chi_rhs.apply(dPsi_n.block(1));
