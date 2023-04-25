@@ -177,6 +177,9 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
     locally_owned_dofs = dof_handler.locally_owned_dofs();
     dealii::DoFTools::extract_locally_relevant_dofs(dof_handler,
                                                     locally_relevant_dofs);
+
+    std::vector<unsigned int> block_component = {0, 1, 2};
+    dealii::DoFRenumbering::component_wise(dof_handler, block_component);
     {
         constraints.clear();
         constraints.reinit(locally_relevant_dofs);
@@ -436,7 +439,17 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
 {
-    dealii::SolverControl solver_control(600);
+    dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG::AdditionalData data;
+    data.elliptic = false;
+
+    // dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG preconditioner;
+    // preconditioner.initialize(system_matrix, data);
+    // dealii::TrilinosWrappers::PreconditionIdentity preconditioner;
+    dealii::LinearAlgebraTrilinos::MPI::PreconditionJacobi preconditioner;
+    // dealii::LinearAlgebraTrilinos::MPI::PreconditionILU preconditioner;
+    preconditioner.initialize(system_matrix);
+
+    dealii::SolverControl solver_control(dof_handler.n_dofs());
     dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::Vector>
         solver_gmres(solver_control);
 
@@ -445,7 +458,8 @@ void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
     solver_gmres.solve(system_matrix,
                        dPsi_n,
                        system_rhs,
-                       dealii::PreconditionIdentity());
+                       preconditioner);
+    pcout << "Number of iterations: " << solver_control.last_step() << "\n\n";
     constraints.distribute(dPsi_n);
 
     dealii::LinearAlgebraTrilinos::MPI::Vector local_Psi_n(locally_owned_dofs, 
