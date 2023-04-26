@@ -7,8 +7,8 @@
 #include <deal.II/lac/block_vector.h>
 #include <deal.II/lac/block_sparse_matrix.h>
 
-template <int dim, typename BlockVector, typename BlockMatrix>
-StressCalculator<dim, BlockVector, BlockMatrix>::
+template <int dim, bool mpi_enabled>
+StressCalculator<dim, mpi_enabled>::
 StressCalculator(const dealii::Triangulation<dim> &tria, 
                  const unsigned int degree)
     : dof_handler(tria)
@@ -16,9 +16,11 @@ StressCalculator(const dealii::Triangulation<dim> &tria,
 {}
 
 
-template class StressCalculator<2, 
-                                dealii::LinearAlgebraTrilinos::MPI::BlockVector, 
-                                dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix>;
-template class StressCalculator<2, 
-                                dealii::BlockVector<double>, 
-                                dealii::BlockSparseMatrix<double>>;
+
+template<int dim>
+StressCalculator<dim, true>
+
+
+
+template class StressCalculator<2, true>;
+template class StressCalculator<2, false>;
