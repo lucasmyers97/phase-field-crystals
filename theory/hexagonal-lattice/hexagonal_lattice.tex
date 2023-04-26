@@ -641,7 +641,8 @@ Written out in its entirety we get:
     + (\partial_i \nabla^2 \psi) (\partial_j \psi)
     - \psi \partial_{ij} \psi
     - (\nabla^2 \psi) (\partial_{ij} \psi)
-    + \left(\nabla^6 \psi + 2 \nabla^4 \psi + (1 + \epsilon) \nabla^2 \psi + \nabla^2 \psi^3\right)\delta_{ij}
+    + \left( \frac12 \left(\nabla^2 \psi\right)^2 + \psi \nabla^2 \psi 
+    + \frac12 (1 + \epsilon) \psi^2 + \frac14 \psi^4 \right) \delta_{ij}
 \end{equation}
 Finally, written in terms of our auxiliary variables:
 \begin{equation}
@@ -651,7 +652,7 @@ Finally, written in terms of our auxiliary variables:
     + (\partial_i \chi) (\partial_j \psi)
     - \psi \partial_{ij} \psi
     - \chi (\partial_{ij} \psi)
-    + \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right)\delta_{ij}
+    + \tfrac12 \left(\chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right)\delta_{ij}
 \end{equation}
 Written in terms of general vector operators, we get the following:
 \begin{equation}
@@ -659,7 +660,7 @@ Written in terms of general vector operators, we get the following:
     =
     \nabla \left(\psi + \chi \right) \otimes \nabla \psi
     - (\psi + \chi) \nabla(\nabla \psi)
-    + \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) I
+    + \tfrac12 \left(\chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right) I
 \end{equation}
 Now note that we will not actually be able to calculate this at each of the quadrature points because we are only using linear elements.
 
@@ -672,13 +673,13 @@ Taking the inner product with a tensor test function $\tau$ yields:
         &=
         \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
         - \left< \tau, (\psi + \chi) \nabla(\nabla \psi) \right>
-        + \left< \tau, \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) I \right> \\
+        + \tfrac12 \left< \tau, \left(\chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right) I \right> \\
         &=
         \begin{multlined}[t]
             \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
             + \left< \nabla \cdot \left((\psi + \chi) \tau \right), \nabla \psi \right>
             - \left< (\psi + \chi) \mathbf{n} \cdot \tau, \nabla \psi \right>_{\partial \Omega} \\
-            + \left< \text{tr}(\tau), \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+            + \tfrac12 \left< \text{tr}(\tau), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4  \right>
         \end{multlined} \\
         &=
         \begin{multlined}[t]
@@ -686,9 +687,7 @@ Taking the inner product with a tensor test function $\tau$ yields:
             + \left< (\nabla \psi + \nabla \chi) \cdot  \tau , \nabla \psi \right>
             + \left< (\psi + \chi) \nabla \cdot \tau, \nabla \psi \right>
             - \left< (\psi + \chi) \mathbf{n} \cdot \tau, \nabla \psi \right>_{\partial \Omega} \\
-            - \left< \text{tr}(\nabla \tau), \nabla \phi \right>
-            + \left< \mathbf{n} \text{tr}(\tau), \nabla \phi \right>_{\partial \Omega}
-            + \left< \text{tr}(\tau), \left( 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+            + \tfrac12 \left< \text{tr}(\tau), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right>
         \end{multlined} \\
     \end{split}
 \end{equation}
@@ -700,8 +699,7 @@ Given that we're working with periodic boundary conditions, there is no boundary
         \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
         + \left< (\nabla \psi + \nabla \chi) \cdot  \tau , \nabla \psi \right>
         + \left< (\psi + \chi) \nabla \cdot \tau, \nabla \psi \right>\\
-        - \left< \text{tr}(\nabla \tau), \nabla \phi \right>
-        + \left< \text{tr}(\tau), \left( 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+        + \tfrac12 \left< \text{tr}(\tau), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right>
     \end{multlined}
 \end{equation}
 To actually project this onto a finite element space, we consider an approximation of $\sigma$:
@@ -727,8 +725,7 @@ is the mass matrix and
         \left< \tau_i, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
         + \left< (\nabla \psi + \nabla \chi) \cdot  \tau_i, \nabla \psi \right>
         + \left< (\psi + \chi) \nabla \cdot \tau_i, \nabla \psi \right>\\
-        - \left< \text{tr}(\nabla \tau_i), \nabla \phi \right>
-        + \left< \text{tr}(\tau_i), \left( 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+        + \tfrac12 \left< \text{tr}(\tau_i), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right>
     \end{multlined}
 \end{equation}
 
