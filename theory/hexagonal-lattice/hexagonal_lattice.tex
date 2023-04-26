@@ -613,7 +613,7 @@ The energy due to an infinitesimal distortion of the phase field is given by:
     \partial_i u_j
 \end{equation}
 The configurational stress is the derivative of this with respect to the displacement gradient:
-\begin{equation}
+\begin{equation} \label{eq:configurational-stress}
     \begin{split}
         \sigma_{ij}
         &=
@@ -733,6 +733,7 @@ is the mass matrix and
 \end{equation}
 
 \section{Deriving the time evolution}
+\subsection{Forcing free energy to be non-positive}
 In general, we would like to impose that the free energy only decrease over time due to dissipative effects:
 \begin{equation}
     \frac{\partial \mathcal{F}}{\partial t} \leq 0
@@ -742,28 +743,87 @@ Additionally, we would like to impose conservation of momentum, which takes the 
     \frac{\partial \psi}{\partial t} + \nabla \cdot \mathbf{J} = 0
 \end{equation}
 where $\mathbf{J}$ is the mass current.
-Given this constraint, we may write this as a Lagrange multiplier problem:
-\begin{equation}
-    \mathcal{L}[\psi]
-    =
-    \mathcal{F}[\psi]
-    - \int_\Omega \lambda(x) \left(\frac{\partial \psi}{\partial t} + \nabla \cdot \mathbf{J}\right) dV
-\end{equation}
-for some scalar $\lambda$.
-Now we try to minimize $\mathcal{L}$:
-\begin{equation}
-    \frac{\partial \mathcal{L}}{\partial t}
-    =
-    \frac{\delta \mathcal{L}}{\delta \psi}
-    \frac{\partial \psi}{\partial t}
-\end{equation}
-First let's explicitly calculate the functional derivative of the Lagrange multiplier part:
+One way to do this is very straightforward:
 \begin{equation}
     \begin{split}
-        \frac{d}{d\tau} \left[\int_\Omega \lambda(x) \left(\frac{\partial (\psi + \tau \delta \psi)}{\partial t} + \nabla \cdot \mathbf{J}\right) dV\right]_{\tau = 0}
+        \frac{\partial \mathcal{F}}{\partial t}
         &=
-        \int_\Omega \lambda(x) \frac{\partial \delta \psi}{\partial t} dV
+        \int_\Omega \frac{\delta \mathcal{F}}{\delta \psi} \frac{\partial \psi}{\partial t} dV \\
+        &=
+        -\int_\Omega \frac{\delta \mathcal{F}}{\delta \psi} \nabla \cdot \mathbf{J} \\
+        &=
+        \int_\Omega \nabla \frac{\delta \mathcal{F}}{\delta \psi} \cdot \mathbf{J}
     \end{split}
+\end{equation}
+where in the last step we have integrated by parts and assumed that the current is zero at the boundary.
+To force this to be non-positive, we can take:
+\begin{equation}
+    \mathbf{J} = \nabla \frac{\delta \mathcal{F}}{\delta \psi}
+    \implies
+    \frac{\partial \psi}{\partial t} = \nabla^2 \frac{\delta \mathcal{F}}{\delta \psi}
+\end{equation}
+
+\subsection{Using Rayleigh dissipation function}
+The above method is straightforward, but it does not generalize well to imposing additional constraints.
+To this end, we rederive the equation of motion using the method of the Rayleigh dissipation function.
+Following \href{https://iopscience.iop.org/article/10.1088/0953-8984/23/28/284118}{Doi}, we define the energy dissipation in terms of the phase-field current:
+\begin{equation}
+    W = \int_\Omega \xi J^2 dV
+\end{equation}
+with some frictional coefficient $\xi$, and $\mathbf{J}$ the phase-field current.
+The free energy functional is given by:
+\begin{equation}
+    \mathcal{F}[\psi]
+    =
+    \int_\Omega f(\psi) dV
+\end{equation}
+From above, we have that:
+\begin{equation}
+    \frac{d \mathcal{F}}{dt}
+    =
+    \int_\Omega \left(\mathbf{J} \cdot \nabla \frac{\delta \mathcal{F}}{\delta \psi} \right)dV
+\end{equation}
+The Rayleighian is then given by:
+\begin{equation}
+    \mathcal{R}
+    =
+    \frac12 \int_\Omega \xi J^2 dV
+    + \int_\Omega \left(\mathbf{J} \cdot \nabla \frac{\delta \mathcal{F}}{\delta \psi} \right)dV
+\end{equation}
+We can then minimize this by taking the derivative with respect to the current:
+\begin{equation}
+    \frac{\delta \mathcal{R}}{\delta \mathbf{J}}
+    =
+    \xi \mathbf{J}
+    + \nabla \frac{\delta \mathcal{F}}{\delta \psi}
+    =
+    0   
+\end{equation}
+which implies:
+\begin{equation}
+    \mathbf{J}
+    =
+    -\frac{1}{\xi}
+    \nabla \frac{\delta \mathcal{F}}{\delta \psi}
+\end{equation}
+Plugging this into the conservation equation gives us back the desired result.
+
+\subsection{Adding additional constraints}
+Given that we are able to use the Rayleigh dissipation function formalism to derive the equation of motion, we may add additional constraints via the method of Lagrange multipliers.
+Here, the additional constraint is one on the configurational force:
+\begin{equation}
+    \nabla \cdot \sigma = 0
+\end{equation}
+where $\sigma$ is as defined in \eqref{eq:configurational-stress}.
+Then we write down a Lagrangian as:
+\begin{equation}
+    \mathcal{L}
+    =
+    \frac12 \int_\Omega \xi J^2 dV
+    + 
+    \int_\Omega \left( \mathbf{J} \cdot \nabla \frac{\delta \mathcal{F}}{\delta \psi} \right) dv
+    -
+    \int_\Omega \lambda(x) \nabla \cdot \sigma dV
 \end{equation}
 
 \section{Time evolution of this configuration}
