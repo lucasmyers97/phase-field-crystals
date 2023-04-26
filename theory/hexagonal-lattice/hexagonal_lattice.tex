@@ -653,8 +653,118 @@ Finally, written in terms of our auxiliary variables:
     - \chi (\partial_{ij} \psi)
     + \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right)\delta_{ij}
 \end{equation}
+Written in terms of general vector operators, we get the following:
+\begin{equation}
+    \sigma
+    =
+    \nabla \left(\psi + \chi \right) \otimes \nabla \psi
+    - (\psi + \chi) \nabla(\nabla \psi)
+    + \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) I
+\end{equation}
 Now note that we will not actually be able to calculate this at each of the quadrature points because we are only using linear elements.
-H
+
+\subsection{Weak form of the configurational stress}
+Because we are using piecewise linear elements, we need to write down a weak form if we are to accurately calculate the higher order derivatives.
+Taking the inner product with a tensor test function $\tau$ yields:
+\begin{equation}
+    \begin{split}
+        \left< \tau, \sigma \right>
+        &=
+        \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
+        - \left< \tau, (\psi + \chi) \nabla(\nabla \psi) \right>
+        + \left< \tau, \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) I \right> \\
+        &=
+        \begin{multlined}[t]
+            \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
+            + \left< \nabla \cdot \left((\psi + \chi) \tau \right), \nabla \psi \right>
+            - \left< (\psi + \chi) \mathbf{n} \cdot \tau, \nabla \psi \right>_{\partial \Omega} \\
+            + \left< \text{tr}(\tau), \left(\nabla^2 \phi + 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+        \end{multlined} \\
+        &=
+        \begin{multlined}[t]
+            \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
+            + \left< (\nabla \psi + \nabla \chi) \cdot  \tau , \nabla \psi \right>
+            + \left< (\psi + \chi) \nabla \cdot \tau, \nabla \psi \right>
+            - \left< (\psi + \chi) \mathbf{n} \cdot \tau, \nabla \psi \right>_{\partial \Omega} \\
+            - \left< \text{tr}(\nabla \tau), \nabla \phi \right>
+            + \left< \mathbf{n} \text{tr}(\tau), \nabla \phi \right>_{\partial \Omega}
+            + \left< \text{tr}(\tau), \left( 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+        \end{multlined} \\
+    \end{split}
+\end{equation}
+Given that we're working with periodic boundary conditions, there is no boundary so the equation reduces to:
+\begin{equation}
+    \left< \tau, \sigma \right>
+    =
+    \begin{multlined}[t]
+        \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
+        + \left< (\nabla \psi + \nabla \chi) \cdot  \tau , \nabla \psi \right>
+        + \left< (\psi + \chi) \nabla \cdot \tau, \nabla \psi \right>\\
+        - \left< \text{tr}(\nabla \tau), \nabla \phi \right>
+        + \left< \text{tr}(\tau), \left( 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+    \end{multlined}
+\end{equation}
+To actually project this onto a finite element space, we consider an approximation of $\sigma$:
+\begin{equation}
+    \sigma_h = \sum_i \sigma_i \tau_i
+\end{equation}
+where each $\sigma_i$ is a scalar.
+Then the problem becomes:
+\begin{equation}
+    M_{ij} \sigma_j = b_i
+\end{equation}
+where
+\begin{equation}
+    M_{ij}
+    =
+    \left<\tau_i, \tau_j\right>
+\end{equation}
+is the mass matrix and
+\begin{equation}
+    b_i
+    =
+    \begin{multlined}[t]
+        \left< \tau_i, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
+        + \left< (\nabla \psi + \nabla \chi) \cdot  \tau_i, \nabla \psi \right>
+        + \left< (\psi + \chi) \nabla \cdot \tau_i, \nabla \psi \right>\\
+        - \left< \text{tr}(\nabla \tau_i), \nabla \phi \right>
+        + \left< \text{tr}(\tau_i), \left( 2 \phi + (1 + \epsilon) \chi + 3\psi^2 \chi + 6 \psi \left(\nabla \psi\right)^2\right) \right>
+    \end{multlined}
+\end{equation}
+
+\section{Deriving the time evolution}
+In general, we would like to impose that the free energy only decrease over time due to dissipative effects:
+\begin{equation}
+    \frac{\partial \mathcal{F}}{\partial t} \leq 0
+\end{equation}
+Additionally, we would like to impose conservation of momentum, which takes the form:
+\begin{equation}
+    \frac{\partial \psi}{\partial t} + \nabla \cdot \mathbf{J} = 0
+\end{equation}
+where $\mathbf{J}$ is the mass current.
+Given this constraint, we may write this as a Lagrange multiplier problem:
+\begin{equation}
+    \mathcal{L}[\psi]
+    =
+    \mathcal{F}[\psi]
+    - \int_\Omega \lambda(x) \left(\frac{\partial \psi}{\partial t} + \nabla \cdot \mathbf{J}\right) dV
+\end{equation}
+for some scalar $\lambda$.
+Now we try to minimize $\mathcal{L}$:
+\begin{equation}
+    \frac{\partial \mathcal{L}}{\partial t}
+    =
+    \frac{\delta \mathcal{L}}{\delta \psi}
+    \frac{\partial \psi}{\partial t}
+\end{equation}
+First let's explicitly calculate the functional derivative of the Lagrange multiplier part:
+\begin{equation}
+    \begin{split}
+        \frac{d}{d\tau} \left[\int_\Omega \lambda(x) \left(\frac{\partial (\psi + \tau \delta \psi)}{\partial t} + \nabla \cdot \mathbf{J}\right) dV\right]_{\tau = 0}
+        &=
+        \int_\Omega \lambda(x) \frac{\partial \delta \psi}{\partial t} dV
+    \end{split}
+\end{equation}
 
 \section{Time evolution of this configuration}
 For debugging purposes, let's calculate the right-hand side of the time evolution equation given this configuration:
