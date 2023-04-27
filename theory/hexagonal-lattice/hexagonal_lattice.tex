@@ -467,50 +467,81 @@ $\delta \psi$, $\delta \chi$, $\delta \phi$ are the finite element vectors for e
 where $L$ is something like the Laplacian operator, and $M$ is the mass matrix.
 
 \subsection{Preconditioning}
-Given the block structure, we may try to get a nicer preconditioner as follows:
-\begin{equation} \label{eq:phi-linear-eq}
-    \begin{split}
-        L_\chi \delta \chi + M_\phi \delta \phi &= H \\
-        \implies \delta \phi &= M_\phi^{-1} \left( H - L_\chi \delta \chi \right)
-    \end{split}
-\end{equation}
-Additionally, we get:
-\begin{equation} \label{eq:chi-linear-eq}
-    \begin{split}
-        L_\psi \delta \psi + M_\chi \delta \chi &= G \\
-        \implies \delta \chi &= M_\chi^{-1} \left( G - L_\psi \delta \psi \right)
-    \end{split}
-\end{equation}
-Substituting this back into the first equation yields:
+For this, we would like to have a $2\times 2$ block so that we may apply the Schur complement method.
+Let's write the matrix as:
 \begin{equation}
-    \delta \phi
-    =
-    M_\phi^{-1} \left( H - L_\chi M_\chi^{-1} \left(G - L_\psi \delta \psi \right) \right)
+    \begin{bmatrix}
+        B &X \\
+        Y &A
+    \end{bmatrix}
 \end{equation}
-The first component of the matrix equation reads:
-\begin{equation} \label{eq:psi-original-equation}
-    B \delta \psi
-    + C \delta \chi
-    + D \delta \phi
-    =
-    F
-\end{equation}
-We may substitute eqs. \eqref{eq:phi-linear-eq} and \eqref{eq:chi-linear-eq} into eq. \eqref{eq:psi-original-equation}:
+where:
 \begin{equation}
-    B \delta \psi 
-    + C M_\chi^{-1} \left(G - L_\psi \delta \psi \right)
-    + D M_\phi^{-1} \left(H - L_\chi M_\chi^{-1} \left(G - L_\psi \delta \psi \right) \right)
+    X
     =
-    F
-\end{equation}
-Rewriting as a linear equation gives:
-\begin{equation} \label{eq:psi-linear-eq}
-    \left(B + \left( D M_\phi^{-1} L_\chi - C \right) M_\chi^{-1} L_\psi \right) \delta \psi
+    \begin{bmatrix}
+        C &D
+    \end{bmatrix}, \:
+    Y 
+    = 
+    \begin{bmatrix}
+        L_\psi \\
+        0
+    \end{bmatrix}, \:
+    A
     =
-    F - C M_\chi^{-1} G + D M_\phi^{-1} \left( L_\chi M_\chi^{-1} G - H \right)
+    \begin{bmatrix}
+        M_\chi &0 \\
+        L_\chi &M_\phi
+    \end{bmatrix}
 \end{equation}
-Then the scheme is to solve eq. \eqref{eq:psi-linear-eq}, then \eqref{eq:chi-linear-eq} and \eqref{eq:phi-linear-eq} are straightforward, in that one only has to invert the mass matrix which is generally well-conditioned and symmetric.
-We may try to come up with a more efficient preconditioner for eq. \eqref{eq:psi-linear-eq} at some point, but for now we will do a direct solve just to make sure everything is working correctly.
+Call $S = B - X A^{-1} Y$.
+Then the inverse of the system matrix is given by:
+\begin{equation}
+    \begin{bmatrix}
+        B &X \\
+        Y &A
+    \end{bmatrix}^{-1}
+    =
+    \begin{bmatrix}
+        S^{-1} &-S^{-1}X A^{-1} \\
+        -A^{-1}Y S^{-1} &A^{-1} + A^{-1}YS^{-1}X A^{-1}
+    \end{bmatrix}
+\end{equation}
+We may write down $S$ more explicitly by considering $A$ and computing its inverse:
+\begin{equation}
+    A^{-1}
+    =
+    \begin{bmatrix}
+        M_\chi^{-1} &0 \\
+        -M_\phi^{-1} L_\chi M_\chi^{-1} &M_\phi^{-1}
+    \end{bmatrix}
+\end{equation}
+This is just done with the Schur complement method and noting that $M_\chi$ is the Schur complement of $A$ with respect to $M_\phi$.
+This is getting somewhat complicated, so considering that $C$ and $D$ are scaled by the timestep $\delta t$, let's assume those contributions are small. 
+Additionally, $B = M_\psi + \mathcal{O}(\delta t)$ so let's assume $\delta t$ is small as well.
+Given this, $S \approx M_\psi$ and then:
+\begin{equation}
+    R^{-1}
+    =
+    -A^{-1} Y S^{-1}
+    =
+    \begin{bmatrix}
+        -M_\chi^{-1} L_\psi M_\psi^{-1} \\
+        M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi M_\psi^{-1}
+    \end{bmatrix}
+\end{equation}
+Then our preconditioner becomes:
+\begin{equation}
+    P^{-1}
+    =
+    \begin{bmatrix}
+        M_\psi^{-1} &0 \\
+        R^{-1} &A^{-1}
+    \end{bmatrix}
+\end{equation}
+The only requirements for this preconditioner are that we multiply by Laplacians and invert mass matrices.
+If this does not work, we may come back to it and try to simplify $B$, $C$, and $D$ less.
 
 \section{Initializing hexagonal lattice}
 
