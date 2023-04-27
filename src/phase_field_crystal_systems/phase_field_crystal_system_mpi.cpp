@@ -31,6 +31,8 @@
 #include <deal.II/lac/solver_control.h>
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/precondition.h>
+#include <deal.II/lac/linear_operator_tools.h>
+#include <deal.II/lac/trilinos_linear_operator.h>
 
 #include <deal.II/numerics/vector_tools_interpolate.h>
 #include <fstream>
@@ -466,16 +468,56 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
 {
-    dealii::SolverControl solver_control(600);
-    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::BlockVector>
-        solver_gmres(solver_control);
+    using vec = dealii::LinearAlgebraTrilinos::MPI::Vector;
+    const auto op_M_chi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(1, 1));
+    dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_M_chi;
+    precondition_M_chi.initialize(system_matrix.block(1, 1));
 
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n(owned_partitioning, 
-                                                           mpi_communicator);
-    solver_gmres.solve(system_matrix,
-                       dPsi_n,
-                       system_rhs,
-                       dealii::PreconditionIdentity());
+    dealii::ReductionControl reduction_control_M_chi(2000, 1e-18, 1e-10);
+    dealii::SolverCG<dealii::LinearAlgebraTrilinos::MPI::Vector> 
+        solver_cg_chi(reduction_control_M_chi);
+    const auto M_chi_inv = dealii::inverse_operator(op_M_chi, 
+                                                    solver_cg_chi, 
+                                                    precondition_M_chi);
+
+    const auto op_M_phi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(2, 2));
+    dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_M_phi;
+    precondition_M_phi.initialize(system_matrix.block(2, 2));
+
+    dealii::ReductionControl reduction_control_M_phi(2000, 1e-18, 1e-10);
+    dealii::SolverCG<dealii::LinearAlgebraTrilinos::MPI::Vector> 
+        solver_cg_phi(reduction_control_M_phi);
+    const auto M_phi_inv = dealii::inverse_operator(op_M_phi, 
+                                                    solver_cg_phi, 
+                                                    precondition_M_phi);
+    const auto B = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(0, 0));
+    const auto C = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(0, 1));
+    const auto D = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(0, 2));
+    const auto L_psi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(1, 0));
+    const auto L_chi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(2, 1));
+
+    const auto psi_matrix = B + (D*M_phi_inv*L_chi - C) * M_chi_inv*L_psi;
+
+    const dealii::LinearAlgebraTrilinos::MPI::Vector& F = system_rhs.block(0);
+    const dealii::LinearAlgebraTrilinos::MPI::Vector& G = system_rhs.block(1);
+    const dealii::LinearAlgebraTrilinos::MPI::Vector& H = system_rhs.block(2);
+
+    const auto psi_rhs = F 
+                         - C * M_chi_inv * G 
+                         + D * M_phi_inv * (L_chi * M_chi_inv * G - H);
+
+    dealii::SolverControl solver_control(600);
+    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::Vector> solver_gmres(solver_control);
+
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n(owned_partitioning, mpi_communicator);
+    solver_gmres.solve(psi_matrix, dPsi_n.block(0), psi_rhs, dealii::PreconditionIdentity());
+
+    const auto chi_rhs = M_chi_inv * (G - L_psi * dPsi_n.block(0));
+    chi_rhs.apply(dPsi_n.block(1));
+
+    const auto phi_rhs = M_phi_inv * (H - L_chi * dPsi_n.block(1));
+    phi_rhs.apply(dPsi_n.block(2));
+
     constraints.distribute(dPsi_n);
 
     dealii::LinearAlgebraTrilinos::MPI::BlockVector 
