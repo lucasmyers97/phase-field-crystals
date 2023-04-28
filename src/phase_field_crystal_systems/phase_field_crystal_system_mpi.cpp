@@ -22,6 +22,7 @@
 #include <deal.II/grid/tria.h>
 #include <deal.II/lac/block_sparsity_pattern.h>
 #include <deal.II/lac/generic_linear_algebra.h>
+#include <deal.II/lac/linear_operator.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/numerics/data_component_interpretation.h>
 #include <deal.II/numerics/vector_tools.h>
@@ -31,6 +32,8 @@
 #include <deal.II/lac/solver_control.h>
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/precondition.h>
+#include <deal.II/lac/linear_operator.h>
+#include <deal.II/lac/block_linear_operator.h>
 #include <deal.II/lac/linear_operator_tools.h>
 #include <deal.II/lac/trilinos_linear_operator.h>
 
@@ -242,11 +245,14 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
         dealii::Table<2, dealii::DoFTools::Coupling> coupling(3, 3);
         for (unsigned int c = 0; c < 3; ++c)
             for (unsigned int d = 0; d < 3; ++d)
+            {
                 if ( ((c == 2) && (d == 0))
                     ||((c == 1) && (d == 2)) )
                     coupling[c][d] = dealii::DoFTools::none;
                 else
                     coupling[c][d] = dealii::DoFTools::always;
+            }
+
 
         dealii::BlockDynamicSparsityPattern dsp(relevant_partitioning);
         dealii::DoFTools::make_sparsity_pattern(dof_handler, 
@@ -261,6 +267,32 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
             locally_relevant_dofs);
 
         system_matrix.reinit(owned_partitioning, dsp, mpi_communicator);
+    }
+    {
+        dealii::Table<2, dealii::DoFTools::Coupling> preconditioner_coupling(3, 3);
+        for (unsigned int c = 0; c < 3; ++c)
+            for (unsigned int d = 0; d < 3; ++d)
+            {
+                if ( (c == 0) && (d == 0) )
+                    preconditioner_coupling[c][d] = dealii::DoFTools::always;
+                else
+                    preconditioner_coupling[c][d] = dealii::DoFTools::none;
+            }
+
+
+        dealii::BlockDynamicSparsityPattern preconditioner_dsp(relevant_partitioning);
+        dealii::DoFTools::make_sparsity_pattern(dof_handler, 
+                                                preconditioner_coupling, 
+                                                preconditioner_dsp, 
+                                                constraints, 
+                                                /*keep_constrained_dofs*/false);
+        dealii::SparsityTools::distribute_sparsity_pattern(
+            preconditioner_dsp,
+            dof_handler.locally_owned_dofs(),
+            mpi_communicator,
+            locally_relevant_dofs);
+
+        M_psi_matrix.reinit(owned_partitioning, preconditioner_dsp, mpi_communicator);
     }
 
     system_rhs.reinit(owned_partitioning, mpi_communicator);
@@ -326,6 +358,7 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
     const unsigned int n_q_points = quadrature_formula.size();
 
     dealii::FullMatrix<double> local_matrix(dofs_per_cell, dofs_per_cell);
+    dealii::FullMatrix<double> local_preconditioner_matrix(dofs_per_cell, dofs_per_cell);
     dealii::Vector<double> local_rhs(dofs_per_cell);
 
     std::vector<dealii::types::global_dof_index> local_dof_indices(dofs_per_cell);
@@ -361,6 +394,7 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
 
         fe_values.reinit(cell);
         local_matrix = 0;
+        local_preconditioner_matrix = 0;
         local_rhs = 0;
 
         for (const unsigned int q : fe_values.quadrature_point_indices())
@@ -447,6 +481,10 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
                          (grad_eta_phi[i] * grad_eta_chi[j])
                         )
                         * fe_values.JxW(q); 
+
+                    local_preconditioner_matrix(i, j) +=
+                        (eta_psi[i] * eta_psi[j])
+                        * fe_values.JxW(q); 
                 }
             }
         }
@@ -457,10 +495,14 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
                                                local_dof_indices,
                                                system_matrix,
                                                system_rhs);
+        constraints.distribute_local_to_global(local_preconditioner_matrix,
+                                               local_dof_indices,
+                                               M_psi_matrix);
     }
 
     system_matrix.compress(dealii::VectorOperation::add);
     system_rhs.compress(dealii::VectorOperation::add);
+    M_psi_matrix.compress(dealii::VectorOperation::add);
 }
 
 
@@ -469,7 +511,9 @@ template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
 {
     using vec = dealii::LinearAlgebraTrilinos::MPI::Vector;
-    const auto op_M_chi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(1, 1));
+    using block_vec = dealii::LinearAlgebraTrilinos::MPI::BlockVector;
+
+    const auto op_M_chi = dealii::linear_operator<vec>(system_matrix.block(1, 1));
     dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_M_chi;
     precondition_M_chi.initialize(system_matrix.block(1, 1));
 
@@ -480,7 +524,7 @@ void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
                                                     solver_cg_chi, 
                                                     precondition_M_chi);
 
-    const auto op_M_phi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(2, 2));
+    const auto op_M_phi = dealii::linear_operator<vec>(system_matrix.block(2, 2));
     dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_M_phi;
     precondition_M_phi.initialize(system_matrix.block(2, 2));
 
@@ -490,33 +534,34 @@ void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
     const auto M_phi_inv = dealii::inverse_operator(op_M_phi, 
                                                     solver_cg_phi, 
                                                     precondition_M_phi);
-    const auto B = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(0, 0));
-    const auto C = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(0, 1));
-    const auto D = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(0, 2));
-    const auto L_psi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(1, 0));
-    const auto L_chi = dealii::TrilinosWrappers::linear_operator<vec, vec>(system_matrix.block(2, 1));
 
-    const auto psi_matrix = B + (D*M_phi_inv*L_chi - C) * M_chi_inv*L_psi;
+    const auto L_psi = dealii::linear_operator<vec>(system_matrix.block(1, 0));
+    const auto L_chi = dealii::linear_operator<vec>(system_matrix.block(2, 1));
 
-    const dealii::LinearAlgebraTrilinos::MPI::Vector& F = system_rhs.block(0);
-    const dealii::LinearAlgebraTrilinos::MPI::Vector& G = system_rhs.block(1);
-    const dealii::LinearAlgebraTrilinos::MPI::Vector& H = system_rhs.block(2);
+    const auto op_M_psi = dealii::linear_operator<vec>(M_psi_matrix.block(0, 0));
+    dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_M_psi;
+    precondition_M_psi.initialize(M_psi_matrix.block(0, 0));
 
-    const auto psi_rhs = F 
-                         - C * M_chi_inv * G 
-                         + D * M_phi_inv * (L_chi * M_chi_inv * G - H);
+    dealii::ReductionControl reduction_control_M_psi(2000, 1e-18, 1e-10);
+    dealii::SolverCG<dealii::LinearAlgebraTrilinos::MPI::Vector> 
+        solver_cg_psi(reduction_control_M_chi);
+    const auto M_psi_inv = dealii::inverse_operator(op_M_psi, 
+                                                    solver_cg_psi, 
+                                                    precondition_M_psi);
 
-    dealii::SolverControl solver_control(600);
-    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::Vector> solver_gmres(solver_control);
+    const auto zero = dealii::null_operator(L_psi);
 
+    const auto P_inv = dealii::block_operator<3, 3, block_vec>(
+                       {M_phi_inv, zero, zero,
+                        -1.0 * M_chi_inv*L_psi*M_psi_inv, M_chi_inv, zero,
+                        M_phi_inv*L_chi*M_chi_inv*L_psi*M_psi_inv, -1.0 * M_phi_inv*L_chi*M_chi_inv, M_phi_inv});
+
+    dealii::SolverControl solver_control(dof_handler.n_dofs());
+
+    dealii::SolverGMRES<block_vec> solver_gmres(solver_control);
     dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n(owned_partitioning, mpi_communicator);
-    solver_gmres.solve(psi_matrix, dPsi_n.block(0), psi_rhs, dealii::PreconditionIdentity());
-
-    const auto chi_rhs = M_chi_inv * (G - L_psi * dPsi_n.block(0));
-    chi_rhs.apply(dPsi_n.block(1));
-
-    const auto phi_rhs = M_phi_inv * (H - L_chi * dPsi_n.block(1));
-    phi_rhs.apply(dPsi_n.block(2));
+    solver_gmres.solve(system_matrix, dPsi_n, system_rhs, P_inv);
+    pcout << "Number of iterations: " << solver_control.last_step() << "\n";
 
     constraints.distribute(dPsi_n);
 

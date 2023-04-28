@@ -38,6 +38,7 @@ private:
     dealii::AffineConstraints<double> constraints;
     dealii::BlockSparsityPattern sparsity_pattern;
     dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix system_matrix;
+    dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix M_psi_matrix;
     dealii::LinearAlgebraTrilinos::MPI::BlockVector system_rhs;
 
     dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_n;

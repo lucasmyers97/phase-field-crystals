@@ -533,12 +533,20 @@ Given this, $S \approx M_\psi$ and then:
 \end{equation}
 Then our preconditioner becomes:
 \begin{equation}
-    P^{-1}
-    =
-    \begin{bmatrix}
-        M_\psi^{-1} &0 \\
-        R^{-1} &A^{-1}
-    \end{bmatrix}
+    \begin{split}
+        P^{-1}
+        &=
+        \begin{bmatrix}
+            M_\psi^{-1} &0 \\
+            R^{-1} &A^{-1}
+        \end{bmatrix} \\
+        &=
+        \begin{bmatrix}
+            M_\psi^{-1} &0 &0\\
+            -M_\chi^{-1} L_\psi M_\psi^{-1} &M_\chi^{-1} &0 \\
+            M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi M_\psi^{-1} &-M_\phi^{-1} L_\chi M_\chi^{-1} &M_\phi^{-1}
+        \end{bmatrix}
+    \end{split}
 \end{equation}
 The only requirements for this preconditioner are that we multiply by Laplacians and invert mass matrices.
 If this does not work, we may come back to it and try to simplify $B$, $C$, and $D$ less.
