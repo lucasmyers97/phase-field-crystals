@@ -38,18 +38,32 @@
 #include <deal.II/lac/trilinos_linear_operator.h>
 
 #include <deal.II/numerics/vector_tools_interpolate.h>
+
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <vector>
 #include <string>
+#include <memory>
+#include <utility>
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 
 
 
 template <int dim>
-PhaseFieldCrystalSystemMPI<dim>::PhaseFieldCrystalSystemMPI(unsigned int degree)
+PhaseFieldCrystalSystemMPI<dim>::
+PhaseFieldCrystalSystemMPI(unsigned int degree,
+
+                           double eps,
+
+                           double dt,
+                           double theta,
+                           double simulation_tol,
+                           unsigned int simulation_max_iters,
+                           unsigned int n_refines,
+
+                           std::unique_ptr<dealii::Function<dim>> initial_condition)
     : mpi_communicator(MPI_COMM_WORLD)
     , triangulation(mpi_communicator,
                     typename dealii::Triangulation<dim>::MeshSmoothing(
@@ -65,26 +79,15 @@ PhaseFieldCrystalSystemMPI<dim>::PhaseFieldCrystalSystemMPI(unsigned int degree)
             pcout,
             dealii::TimerOutput::never,
             dealii::TimerOutput::wall_times)
-{
-    double psi_0 = -0.43;
-    double A_0 = 0.2 * (std::abs(psi_0)
-                        + (1.0 / 3.0) * std::sqrt(-15 * eps - 36 * psi_0 * psi_0));
 
-    double a = 4 * M_PI / std::sqrt(3);
-
-    std::vector<dealii::Tensor<1, dim>> dislocation_positions;
-    // dislocation_positions.push_back(dealii::Tensor<1, dim>({2 * a, 0}));
-    // dislocation_positions.push_back(dealii::Tensor<1, dim>({-2 * a, 0}));
-
-    std::vector<dealii::Tensor<1, dim>> burgers_vectors;
-    // burgers_vectors.push_back(dealii::Tensor<1, dim>({a, 0}));
-    // burgers_vectors.push_back(dealii::Tensor<1, dim>({-a, 0}));
-
-    initial_condition = std::make_unique<HexagonalLattice<dim>>(A_0, 
-                                                                psi_0, 
-                                                                dislocation_positions, 
-                                                                burgers_vectors);
-}
+    , eps(eps)
+    , dt(dt)
+    , theta(theta)
+    , simulation_tol(simulation_tol)
+    , simulation_max_iters(simulation_max_iters)
+    , n_refines(n_refines)
+    , initial_condition(std::move(initial_condition))
+{}
 
 
 

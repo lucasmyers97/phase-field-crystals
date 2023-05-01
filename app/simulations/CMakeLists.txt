@@ -4,6 +4,7 @@ add_executable(phase_field_crystal_simulation
 target_link_libraries(phase_field_crystal_simulation
     PRIVATE
     PhaseFieldCrystalSystem
+    PhaseFieldFunctions
     )
 
 add_executable(phase_field_crystal_simulation_mpi

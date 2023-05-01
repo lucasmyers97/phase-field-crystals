@@ -1,7 +1,6 @@
 #ifndef PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 #define PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 
-#include <algorithm>
 #include <deal.II/base/mpi.h>
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/timer.h>
@@ -19,11 +18,24 @@
 #include <deal.II/lac/affine_constraints.h>
 #include <deal.II/lac/generic_linear_algebra.h>
 
+#include <memory>
+#include <utility>
+
 template <int dim>
 class PhaseFieldCrystalSystemMPI
 {
 public:
-    PhaseFieldCrystalSystemMPI(unsigned int degree);
+    PhaseFieldCrystalSystemMPI(unsigned int degree,
+
+                               double eps,
+
+                               double dt,
+                               double theta,
+                               double simulation_tol,
+                               unsigned int simulation_max_iters,
+                               unsigned int n_refines,
+
+                               std::unique_ptr<dealii::Function<dim>> initial_condition);
     void run();
 
 private:
@@ -48,12 +60,12 @@ private:
     dealii::ConditionalOStream pcout;
     dealii::TimerOutput timer;
 
-    double dt = 0.1;
-    double theta = 1.0;
     double eps = -0.8;
 
+    double dt = 0.1;
+    double theta = 1.0;
     double simulation_tol = 1e-8;
-    double simulation_max_iters = 200;
+    unsigned int simulation_max_iters = 200;
     unsigned int n_refines = 6;
 
     std::unique_ptr<dealii::Function<dim>> initial_condition;
