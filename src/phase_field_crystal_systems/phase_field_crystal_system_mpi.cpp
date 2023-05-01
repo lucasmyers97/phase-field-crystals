@@ -46,63 +46,6 @@
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 
-class PsiMatrix : public dealii::Subscriptor
-{
-public:
-    PsiMatrix(const dealii::SparseMatrix<double> &B,
-              const dealii::SparseMatrix<double> &C,
-              const dealii::SparseMatrix<double> &D,
-              const dealii::SparseMatrix<double> &L_psi,
-              const dealii::SparseMatrix<double> &L_chi,
-              const dealii::SparseDirectUMFPACK &M_chi_inv,
-              const dealii::SparseDirectUMFPACK &M_phi_inv)
-        : B(B)
-        , C(C)
-        , D(D)
-        , L_psi(L_psi)
-        , L_chi(L_chi)
-        , M_chi_inv(M_chi_inv)
-        , M_phi_inv(M_phi_inv)
-    {};
-
-    void vmult(dealii::Vector<double> &dst, dealii::Vector<double> &src) const;
-
-private:
-    const dealii::SparseMatrix<double> &B;
-    const dealii::SparseMatrix<double> &C;
-    const dealii::SparseMatrix<double> &D;
-    const dealii::SparseMatrix<double> &L_psi;
-    const dealii::SparseMatrix<double> &L_chi;
-    const dealii::SparseDirectUMFPACK &M_chi_inv;
-    const dealii::SparseDirectUMFPACK &M_phi_inv;
-};
-
-
-
-void PsiMatrix::vmult(dealii::Vector<double> &dst, dealii::Vector<double> &src) const
-{
-    dealii::Vector<double> tmp_psi(src.size());
-    dealii::Vector<double> tmp_chi_1(L_psi.m());
-    dealii::Vector<double> tmp_chi_2(L_psi.m());
-    dealii::Vector<double> tmp_phi_1(L_chi.m());
-    dealii::Vector<double> tmp_phi_2(L_chi.m());
-
-    L_psi.vmult(tmp_chi_1, src);
-    M_chi_inv.vmult(tmp_chi_2, tmp_chi_1);
-
-    C.vmult(tmp_psi, tmp_chi_2);
-
-    L_chi.vmult(tmp_phi_1, tmp_chi_2);
-    M_phi_inv.vmult(tmp_phi_2, tmp_phi_1);
-    D.vmult(dst, tmp_phi_2);
-
-    dst -= tmp_psi;
-
-    B.vmult(tmp_psi, src);
-
-    dst += tmp_psi;
-}
-
 
 
 template <int dim>
