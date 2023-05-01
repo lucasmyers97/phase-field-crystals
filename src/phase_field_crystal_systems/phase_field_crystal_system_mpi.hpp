@@ -33,7 +33,10 @@ public:
                                double theta,
                                double simulation_tol,
                                unsigned int simulation_max_iters,
+
                                unsigned int n_refines,
+                               const dealii::Point<dim> &lower_left,
+                               const dealii::Point<dim> &upper_right,
 
                                std::unique_ptr<dealii::Function<dim>> initial_condition);
     void run();
@@ -66,7 +69,10 @@ private:
     double theta = 1.0;
     double simulation_tol = 1e-8;
     unsigned int simulation_max_iters = 200;
+
     unsigned int n_refines = 6;
+    dealii::Point<dim> lower_left = {-4 * M_PI / std::sqrt(3), -4 * M_PI / std::sqrt(3)};
+    dealii::Point<dim> upper_right = {4 * M_PI / std::sqrt(3), 4 * M_PI / std::sqrt(3)};
 
     std::unique_ptr<dealii::Function<dim>> initial_condition;
 

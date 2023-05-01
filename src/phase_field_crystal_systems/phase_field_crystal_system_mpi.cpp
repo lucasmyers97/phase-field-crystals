@@ -61,7 +61,10 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
                            double theta,
                            double simulation_tol,
                            unsigned int simulation_max_iters,
+
                            unsigned int n_refines,
+                           const dealii::Point<dim> &lower_left,
+                           const dealii::Point<dim> &upper_right,
 
                            std::unique_ptr<dealii::Function<dim>> initial_condition)
     : mpi_communicator(MPI_COMM_WORLD)
@@ -86,6 +89,8 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
     , simulation_tol(simulation_tol)
     , simulation_max_iters(simulation_max_iters)
     , n_refines(n_refines)
+    , lower_left(lower_left)
+    , upper_right(upper_right)
     , initial_condition(std::move(initial_condition))
 {}
 
@@ -94,23 +99,10 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::make_grid()
 {
-    const double a = 4 * M_PI / std::sqrt(3);
-
-    // const int n_across = 5;
-    // const int n_down = 5;
-    // const double left = -n_across * (2 / std::sqrt(3)) * M_PI * 2;
-    // const double down = -n_down * 2 * M_PI;
-    // const double left = -20 * a;
-    // const double down = -20 * std::sqrt(3) * a;
-    const double left = -6 * a;
-    const double down = -5 * a;
-
-    dealii::Point<dim> p1 = {left, down};
-    dealii::Point<dim> p2 = -p1;
 
     dealii::GridGenerator::hyper_rectangle(triangulation, 
-                                           p1, 
-                                           p2, 
+                                           lower_left, 
+                                           upper_right, 
                                            /*colorize*/ true);
 
     using PeriodicFaces
