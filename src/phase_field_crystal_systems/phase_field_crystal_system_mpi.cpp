@@ -538,29 +538,34 @@ void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
     const auto L_psi = dealii::linear_operator<vec>(system_matrix.block(1, 0));
     const auto L_chi = dealii::linear_operator<vec>(system_matrix.block(2, 1));
 
-    const auto op_M_psi = dealii::linear_operator<vec>(M_psi_matrix.block(0, 0));
-    dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_M_psi;
-    precondition_M_psi.initialize(M_psi_matrix.block(0, 0));
+    const auto op_B = dealii::linear_operator<vec>(system_matrix.block(0, 0));
+    dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG precondition_B;
+    precondition_B.initialize(system_matrix.block(0, 0));
 
-    dealii::ReductionControl reduction_control_M_psi(2000, 1e-18, 1e-10);
-    dealii::SolverCG<dealii::LinearAlgebraTrilinos::MPI::Vector> 
-        solver_cg_psi(reduction_control_M_chi);
-    const auto M_psi_inv = dealii::inverse_operator(op_M_psi, 
-                                                    solver_cg_psi, 
-                                                    precondition_M_psi);
+    dealii::ReductionControl reduction_control_B(2000, 1e-18, 1e-10);
+    dealii::SolverGMRES<dealii::LinearAlgebraTrilinos::MPI::Vector> 
+        solver_gmres_B(reduction_control_B);
+    const auto B_inv = dealii::inverse_operator(op_B, 
+                                                solver_gmres_B, 
+                                                precondition_B);
+
+    // dealii::LinearAlgebraTrilinos::MPI::PreconditionAMG B_preconditioner;
+    // B_preconditioner.initialize(system_matrix.block(0, 0));
+    // const auto B_inv = dealii::linear_operator<vec>(B_preconditioner);
 
     const auto zero = dealii::null_operator(L_psi);
 
     const auto P_inv = dealii::block_operator<3, 3, block_vec>(
-                       {M_phi_inv, zero, zero,
-                        -1.0 * M_chi_inv*L_psi*M_psi_inv, M_chi_inv, zero,
-                        M_phi_inv*L_chi*M_chi_inv*L_psi*M_psi_inv, -1.0 * M_phi_inv*L_chi*M_chi_inv, M_phi_inv});
+                       {B_inv, zero, zero,
+                        -1.0 * M_chi_inv*L_psi*B_inv, M_chi_inv, zero,
+                        M_phi_inv*L_chi*M_chi_inv*L_psi*B_inv, -1.0 * M_phi_inv*L_chi*M_chi_inv, M_phi_inv});
 
     dealii::SolverControl solver_control(dof_handler.n_dofs());
 
     dealii::SolverGMRES<block_vec> solver_gmres(solver_control);
     dealii::LinearAlgebraTrilinos::MPI::BlockVector dPsi_n(owned_partitioning, mpi_communicator);
-    solver_gmres.solve(system_matrix, dPsi_n, system_rhs, P_inv);
+    // solver_gmres.solve(system_matrix, dPsi_n, system_rhs, P_inv);
+    solver_gmres.solve(system_matrix, dPsi_n, system_rhs, dealii::PreconditionIdentity());
     pcout << "Number of iterations: " << solver_control.last_step() << "\n";
 
     constraints.distribute(dPsi_n);
