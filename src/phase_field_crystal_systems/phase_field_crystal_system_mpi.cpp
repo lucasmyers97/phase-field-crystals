@@ -122,12 +122,31 @@ PhaseFieldCrystalSystemMPI<dim>::PhaseFieldCrystalSystemMPI(unsigned int degree)
             pcout,
             dealii::TimerOutput::never,
             dealii::TimerOutput::wall_times)
-{}
+{
+    double psi_0 = -0.43;
+    double A_0 = 0.2 * (std::abs(psi_0)
+                        + (1.0 / 3.0) * std::sqrt(-15 * eps - 36 * psi_0 * psi_0));
+
+    double a = 4 * M_PI / std::sqrt(3);
+
+    std::vector<dealii::Tensor<1, dim>> dislocation_positions;
+    // dislocation_positions.push_back(dealii::Tensor<1, dim>({2 * a, 0}));
+    // dislocation_positions.push_back(dealii::Tensor<1, dim>({-2 * a, 0}));
+
+    std::vector<dealii::Tensor<1, dim>> burgers_vectors;
+    // burgers_vectors.push_back(dealii::Tensor<1, dim>({a, 0}));
+    // burgers_vectors.push_back(dealii::Tensor<1, dim>({-a, 0}));
+
+    initial_condition = std::make_unique<HexagonalLattice<dim>>(A_0, 
+                                                                psi_0, 
+                                                                dislocation_positions, 
+                                                                burgers_vectors);
+}
 
 
 
 template <int dim>
-void PhaseFieldCrystalSystemMPI<dim>::make_grid(unsigned int n_refines)
+void PhaseFieldCrystalSystemMPI<dim>::make_grid()
 {
     const double a = 4 * M_PI / std::sqrt(3);
 
@@ -303,29 +322,11 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::initialize_fe_field()
 {
-    double psi_0 = -0.43;
-    double A_0 = 0.2 * (std::abs(psi_0)
-                        + (1.0 / 3.0) * std::sqrt(-15 * eps - 36 * psi_0 * psi_0));
-
-    double a = 4 * M_PI / std::sqrt(3);
-
-    std::vector<dealii::Tensor<1, dim>> dislocation_positions;
-    // dislocation_positions.push_back(dealii::Tensor<1, dim>({2 * a, 0}));
-    // dislocation_positions.push_back(dealii::Tensor<1, dim>({-2 * a, 0}));
-
-    std::vector<dealii::Tensor<1, dim>> burgers_vectors;
-    // burgers_vectors.push_back(dealii::Tensor<1, dim>({a, 0}));
-    // burgers_vectors.push_back(dealii::Tensor<1, dim>({-a, 0}));
-
-    HexagonalLattice<dim> hexagonal_lattice(A_0, 
-                                            psi_0, 
-                                            dislocation_positions, 
-                                            burgers_vectors);
 
     dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_0(owned_partitioning, 
                                                           mpi_communicator);
     dealii::VectorTools::interpolate(dof_handler,
-                                     hexagonal_lattice,
+                                     *initial_condition,
                                      Psi_0);
     constraints.distribute(Psi_0);
     Psi_0.compress(dealii::VectorOperation::insert);
@@ -645,10 +646,10 @@ void PhaseFieldCrystalSystemMPI<dim>::output_rhs(unsigned int iteration)
 
 
 template <int dim>
-void PhaseFieldCrystalSystemMPI<dim>::run(unsigned int n_refines)
+void PhaseFieldCrystalSystemMPI<dim>::run()
 {
     pcout << "Making grid!\n";
-    make_grid(n_refines);
+    make_grid();
 
     pcout << "Setting up dofs!\n";
     setup_dofs();

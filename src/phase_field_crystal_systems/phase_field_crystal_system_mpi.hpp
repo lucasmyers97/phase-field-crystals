@@ -1,6 +1,7 @@
 #ifndef PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 #define PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 
+#include <algorithm>
 #include <deal.II/base/mpi.h>
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/timer.h>
@@ -23,7 +24,7 @@ class PhaseFieldCrystalSystemMPI
 {
 public:
     PhaseFieldCrystalSystemMPI(unsigned int degree);
-    void run(unsigned int n_refines);
+    void run();
 
 private:
     MPI_Comm mpi_communicator;
@@ -48,13 +49,16 @@ private:
     dealii::TimerOutput timer;
 
     double dt = 0.1;
-    double theta = 0.5;
+    double theta = 1.0;
     double eps = -0.8;
 
     double simulation_tol = 1e-8;
     double simulation_max_iters = 200;
+    unsigned int n_refines = 6;
 
-    void make_grid(unsigned int n_refines);
+    std::unique_ptr<dealii::Function<dim>> initial_condition;
+
+    void make_grid();
     void setup_dofs();
     void initialize_fe_field();
     void assemble_system();
