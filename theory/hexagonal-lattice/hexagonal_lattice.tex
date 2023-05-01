@@ -551,6 +551,21 @@ Then our preconditioner becomes:
 The only requirements for this preconditioner are that we multiply by Laplacians and invert mass matrices.
 If this does not work, we may come back to it and try to simplify $B$, $C$, and $D$ less.
 
+\subsection{Preconditioning $B$ effectively}
+The preconditioner proposed above did not work well.
+For 6 refinements, it caused slightly (~10\%) fewer iterations, but for 7 it got about an order of magnitude worse.
+Hence, we will try the next most complicated thing which is to still assume $X \approx 0$, but then try to approximate $B^{-1}$.
+In this case, $S \approx B$, and $S^{-1} \approx \widetilde{B^{-1}}$:
+\begin{equation}
+    P^{-1}
+    =
+    \begin{bmatrix}
+        \widetilde{B^{-1}} &0 &0\\
+        -M_\chi^{-1} L_\psi \widetilde{B^{-1}} &M_\chi^{-1} &0 \\
+        M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi \widetilde{B^{-1}} &-M_\phi^{-1} L_\chi M_\chi^{-1} &M_\phi^{-1}
+    \end{bmatrix}
+\end{equation}
+
 \section{Initializing hexagonal lattice}
 
 For this, we need to initialize $\psi$, $\chi$, and $\phi$.
