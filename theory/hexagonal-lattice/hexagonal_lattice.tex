@@ -568,6 +568,98 @@ In this case, $S \approx B$, and $S^{-1} \approx \widetilde{B^{-1}}$:
 
 \subsection{Including $X$}
 The above does not seem to work very effectively either. 
+Hence, let us just do the most straightforward thing and calculate $S$ explicitly, by first calculating $X A^{-1} Y$:
+\begin{equation}
+    \begin{split}
+        X A^{-1} Y
+        &=
+        \begin{bmatrix}
+            C &D
+        \end{bmatrix}
+        \begin{bmatrix}
+            M_\chi^{-1} &0 \\
+            -M_\phi^{-1} L_\chi M_\chi^{-1} &M_\phi^{-1}
+        \end{bmatrix}
+        \begin{bmatrix}
+            L_\psi \\
+            0
+        \end{bmatrix}\\
+        &=
+        \begin{bmatrix}
+            C &D
+        \end{bmatrix}
+        \begin{bmatrix}
+            M_\chi^{-1} L_\psi \\
+            -M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi
+        \end{bmatrix} \\
+        &=
+        C M_\chi^{-1} L_\psi
+        - D M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi
+    \end{split}
+\end{equation}
+Hence, we may calculate $S$ directly.
+Finally, we may calculate $X A^{-1}$ and $A^{-1} Y$ explicitly:
+\begin{equation}
+    \begin{split}
+        X A^{-1}
+        &=
+        \begin{bmatrix}
+            C &D
+        \end{bmatrix}
+        \begin{bmatrix}
+            M_\chi^{-1} &0 \\
+            - M_\phi^{-1} L_\chi M_\chi^{-1} &M_\phi^{-1}
+        \end{bmatrix} \\
+        &= 
+        \begin{bmatrix}
+            C M_\chi^{-1} - D M_\phi^{-1} L_\chi M_\chi^{-1} &D M_\phi^{-1}
+        \end{bmatrix}
+    \end{split}
+\end{equation}
+\begin{equation}
+    \begin{split}
+        A^{-1} Y
+        &=
+        \begin{bmatrix}
+            M_\chi^{-1} &0 \\
+            - M_\phi^{-1} L_\chi M_\chi^{-1} &M_\phi^{-1}
+        \end{bmatrix}
+        \begin{bmatrix}
+            L_\psi \\
+            0
+        \end{bmatrix} \\
+        &=
+        \begin{bmatrix}
+            M_\chi^{-1} L_\psi \\
+            -M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi
+        \end{bmatrix}
+    \end{split}
+\end{equation}
+The last thing to calculate:
+\begin{equation}
+    \begin{split}
+        A^{-1} Y S^{-1} X A^{-1}
+        &=
+        \begin{bmatrix}
+            M_\chi^{-1} L_\psi \\
+            -M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi
+        \end{bmatrix}
+        \begin{bmatrix}
+            S^{-1}
+        \end{bmatrix}
+        \begin{bmatrix}
+            C M_\chi^{-1} - D M_\phi^{-1} L_\chi M_\chi^{-1} &D M_\phi^{-1}
+        \end{bmatrix} \\
+        &=
+        \begin{bmatrix}
+            M_\chi^{-1} L_\psi S^{-1} \left(C M_\chi^{-1} - D M_\phi^{-1} L_\psi M_\chi^{-1}\right)
+            & M_\chi^{-1} L_\psi S^{-1} D M_\phi^{-1} \\
+            -M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi S^{-1} \left(C M_\chi^{-1} - D M_\phi^{-1} L_\psi M_\chi^{-1}\right)
+            & -M_\phi^{-1} L_\chi M_\chi^{-1} L_\psi S^{-1} D M_\phi^{-1}
+        \end{bmatrix}
+    \end{split}
+\end{equation}
+This explicitly gives us the entire inverted matrix.
 
 \section{Simpler Jacobian}
 Apparently it is often reasonable to simplify a complicated Jacobian, so long as the Newton iterations still converge to the given residual.

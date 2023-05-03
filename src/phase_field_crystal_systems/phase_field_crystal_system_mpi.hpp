@@ -80,8 +80,8 @@ private:
     void setup_dofs();
     void initialize_fe_field();
     void assemble_system();
-    void assemble_simple_system();
     void solve_and_update();
+    void solve_and_update_no_precondition();
     void iterate_timestep();
     void output_configuration(unsigned int iteration);
     void output_rhs(unsigned int iteration);
