@@ -447,6 +447,176 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
 
 
 template <int dim>
+void PhaseFieldCrystalSystemMPI<dim>::assemble_simple_system()
+{
+    system_matrix = 0;
+    system_rhs = 0;
+
+    dealii::QGauss<dim> quadrature_formula(fe_system.degree + 1);
+    
+    dealii::FEValues<dim> fe_values(fe_system,
+                                    quadrature_formula,
+                                    dealii::update_values |
+                                    dealii::update_gradients |
+                                    dealii::update_quadrature_points |
+                                    dealii::update_JxW_values);
+
+    const unsigned int dofs_per_cell = fe_system.n_dofs_per_cell();
+    const unsigned int n_q_points = quadrature_formula.size();
+
+    dealii::FullMatrix<double> local_matrix(dofs_per_cell, dofs_per_cell);
+    dealii::FullMatrix<double> local_preconditioner_matrix(dofs_per_cell, dofs_per_cell);
+    dealii::Vector<double> local_rhs(dofs_per_cell);
+
+    std::vector<dealii::types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+    const dealii::FEValuesExtractors::Scalar psi(0);
+    const dealii::FEValuesExtractors::Scalar chi(1);
+    const dealii::FEValuesExtractors::Scalar phi(2);
+
+    std::vector<double> eta_psi(dofs_per_cell);
+    std::vector<double> eta_chi(dofs_per_cell);
+    std::vector<double> eta_phi(dofs_per_cell);
+    std::vector<dealii::Tensor<1, dim>> grad_eta_psi(dofs_per_cell);
+    std::vector<dealii::Tensor<1, dim>> grad_eta_chi(dofs_per_cell);
+    std::vector<dealii::Tensor<1, dim>> grad_eta_phi(dofs_per_cell);
+
+    std::vector<double> psi_n(n_q_points);
+    std::vector<double> chi_n(n_q_points);
+    std::vector<double> phi_n(n_q_points);
+    std::vector<double> psi_n_1(n_q_points);
+    std::vector<double> chi_n_1(n_q_points);
+    std::vector<double> phi_n_1(n_q_points);
+    std::vector<dealii::Tensor<1, dim>> grad_psi_n(n_q_points);
+    std::vector<dealii::Tensor<1, dim>> grad_chi_n(n_q_points);
+    std::vector<dealii::Tensor<1, dim>> grad_phi_n(n_q_points);
+    std::vector<dealii::Tensor<1, dim>> grad_psi_n_1(n_q_points);
+    std::vector<dealii::Tensor<1, dim>> grad_chi_n_1(n_q_points);
+    std::vector<dealii::Tensor<1, dim>> grad_phi_n_1(n_q_points);
+
+    dealii::Tensor<1, dim> m;
+    for (int i = 0; i < dim; ++i)
+        m[i] = 1;
+    
+    for (const auto &cell : dof_handler.active_cell_iterators())
+    {
+        if (!(cell->is_locally_owned()))
+            continue;
+
+        fe_values.reinit(cell);
+        local_matrix = 0;
+        local_preconditioner_matrix = 0;
+        local_rhs = 0;
+
+        for (const unsigned int q : fe_values.quadrature_point_indices())
+        {
+            fe_values[psi].get_function_values(Psi_n, psi_n);
+            fe_values[chi].get_function_values(Psi_n, chi_n);
+            fe_values[phi].get_function_values(Psi_n, phi_n);
+            fe_values[psi].get_function_values(Psi_n_1, psi_n_1);
+            fe_values[chi].get_function_values(Psi_n_1, chi_n_1);
+            fe_values[phi].get_function_values(Psi_n_1, phi_n_1);
+            fe_values[psi].get_function_gradients(Psi_n, grad_psi_n);
+            fe_values[chi].get_function_gradients(Psi_n, grad_chi_n);
+            fe_values[phi].get_function_gradients(Psi_n, grad_phi_n);
+            fe_values[psi].get_function_gradients(Psi_n_1, grad_psi_n_1);
+            fe_values[chi].get_function_gradients(Psi_n_1, grad_chi_n_1);
+            fe_values[phi].get_function_gradients(Psi_n_1, grad_phi_n_1);
+
+            for (unsigned int k = 0; k < dofs_per_cell; ++k)
+            {
+                grad_eta_psi[k] = fe_values[psi].gradient(k, q);
+                grad_eta_chi[k] = fe_values[chi].gradient(k, q);
+                grad_eta_phi[k] = fe_values[phi].gradient(k, q);
+                eta_psi[k] = fe_values[psi].value(k, q);
+                eta_chi[k] = fe_values[chi].value(k, q);
+                eta_phi[k] = fe_values[phi].value(k, q);
+            }
+
+            for (const unsigned int i : fe_values.dof_indices())
+            {
+                local_rhs(i) +=
+                    (
+                     (eta_psi[i]
+                      * (-psi_n[q] + psi_n_1[q]
+                         + dt * theta * (2 * phi_n[q]
+                                         + (1 + eps) * chi_n[q]
+                                         + 3 * psi_n[q] * psi_n[q] * chi_n[q]
+                                         + 6 * psi_n[q] * grad_psi_n[q] * grad_psi_n[q]
+                             )
+                         + dt * (1 - theta) * (2 * phi_n_1[q]
+                                               + (1 + eps) * chi_n_1[q]
+                                               + 3 * psi_n_1[q] * psi_n_1[q] * chi_n_1[q]
+                                               + 6 * psi_n_1[q] * grad_psi_n_1[q] * grad_psi_n_1[q]
+                             )
+                      )
+                     )
+                     -
+                     (dt * grad_eta_psi[i]
+                      * (theta * grad_phi_n[q] + (1 - theta) * grad_phi_n_1[q])
+                     )
+                     -
+                     (eta_chi[i] * chi_n[q])
+                     -
+                     (grad_eta_chi[i] * grad_psi_n[q])
+                     -
+                     (eta_phi[i] * phi_n[q])
+                     -
+                     (grad_eta_phi[i] * grad_chi_n[q])
+                    )
+                    * fe_values.JxW(q);
+
+                for (const unsigned int j : fe_values.dof_indices())
+                {
+                    local_matrix(i, j) +=
+                        (
+                         (eta_psi[i] 
+                          * (eta_psi[j] 
+                             - dt * theta * (2 * eta_phi[j]
+                                             + (4 + eps) * eta_chi[j]
+                                             + 6 * eta_psi[j]
+                                             + 12 * m * grad_eta_psi[j])
+                            )
+                         )
+                         +
+                         (dt * theta * grad_eta_psi[i] * grad_eta_phi[j])
+                         +
+                         (eta_chi[i] * eta_chi[j])
+                         +
+                         (grad_eta_chi[i] * grad_eta_psi[j])
+                         +
+                         (eta_phi[i] * eta_phi[j])
+                         +
+                         (grad_eta_phi[i] * grad_eta_chi[j])
+                        )
+                        * fe_values.JxW(q); 
+
+                    local_preconditioner_matrix(i, j) +=
+                        (eta_psi[i] * eta_psi[j])
+                        * fe_values.JxW(q); 
+                }
+            }
+        }
+
+        cell->get_dof_indices(local_dof_indices);
+        constraints.distribute_local_to_global(local_matrix,
+                                               local_rhs,
+                                               local_dof_indices,
+                                               system_matrix,
+                                               system_rhs);
+        constraints.distribute_local_to_global(local_preconditioner_matrix,
+                                               local_dof_indices,
+                                               M_psi_matrix);
+    }
+
+    system_matrix.compress(dealii::VectorOperation::add);
+    system_rhs.compress(dealii::VectorOperation::add);
+    M_psi_matrix.compress(dealii::VectorOperation::add);
+}
+
+
+
+template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::solve_and_update()
 {
     using vec = dealii::LinearAlgebraTrilinos::MPI::Vector;
@@ -524,7 +694,8 @@ void PhaseFieldCrystalSystemMPI<dim>::iterate_timestep()
     for (unsigned int n_iters = 0; n_iters < simulation_max_iters; ++n_iters)
     {
         pcout << "Assembling system!\n";
-        assemble_system();
+        // assemble_system();
+        assemble_simple_system();
 
         const double residual = system_rhs.l2_norm();
         pcout << "Residual is: " << residual << "\n";

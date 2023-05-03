@@ -566,6 +566,40 @@ In this case, $S \approx B$, and $S^{-1} \approx \widetilde{B^{-1}}$:
     \end{bmatrix}
 \end{equation}
 
+\subsection{Including $X$}
+The above does not seem to work very effectively either. 
+
+\section{Simpler Jacobian}
+Apparently it is often reasonable to simplify a complicated Jacobian, so long as the Newton iterations still converge to the given residual.
+To this end, we define a simplified Jacobian as:
+\begin{equation}
+    dR(\Psi)
+    =
+    \begin{bmatrix}
+        1 - \delta t \, \theta \left[6 + 12 \, \mathbf{m} \cdot \nabla \right]
+        &-\delta t \, \theta \left(4 + \epsilon\right)
+        &-\delta t \, \theta \left(\nabla^2 + 2\right) \\
+        -\nabla^2 &1 &0 \\
+        0 &-\nabla^2 &1
+    \end{bmatrix}
+\end{equation}
+where here $\mathbf{m} = (1, 1, 1)$.
+Translated into a weak form, this gives:
+\begin{equation}
+    \begin{split}
+        B_{ij} 
+        &= 
+        \left<\eta_{i, \psi}, \eta_{i, \psi}\right>
+        - 6 \delta t \, \theta \left[
+            \left<\eta_{i, \psi}, \eta_{j, \psi}\right>
+            + 2 \left<\eta_{i, \psi}, \mathbf{m} \cdot \nabla \eta_{j, \psi}\right>
+        \right] \\
+        C_{ij}
+        &=
+        -\delta t \, \theta \left(4 + \eta\right) \left<\eta_{i, \psi}, \eta_{j, \chi}\right> \\
+    \end{split}
+\end{equation}
+
 \section{Initializing hexagonal lattice}
 
 For this, we need to initialize $\psi$, $\chi$, and $\phi$.
