@@ -564,7 +564,7 @@ void PhaseFieldCrystalSystemMPI<dim>::iterate_timestep()
             break;
 
         pcout << "Solving and updating!\n";
-        solve_and_update();
+        solve_and_update_no_precondition();
     }
     Psi_n_1 = Psi_n;
 }
