@@ -2,8 +2,8 @@
 cmake_minimum_required(VERSION 3.12)
 project(phase-field-crystals VERSION 0.1 LANGUAGES C CXX)
 
-# Must have at least C++14
-set(CMAKE_CXX_STANDARD 14)
+# Must have at least C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If user doesn't set build type, default to Release
