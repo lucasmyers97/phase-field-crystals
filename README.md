@@ -11,7 +11,8 @@ Dependencies
 
 This library relies on the [deal.II finite element library](dealii.org).
 Deal.II can also optionally rely on a whole slew of other libraries to enable various extended functionality.
-At the current time, a vanilla installation of deal.II is all that is required, but we plan to include parallelization in the future which will require MPI support at the very least, and likely an external linear algebra library such as Trilinos.
+At the current time, we require deal.II to be built with MPI, p4est, and Trilinos.
+This allows for the use of MPI-parallelized simulations.
 
 Build and installation instructions
 -----------------------------------
@@ -19,6 +20,12 @@ Build and installation instructions
 Building and installation is handled using CMake.
 
 ### Basic installation
+
+First, pull from git:
+```
+git clone --recurse-submodules https://github.com/lucasmyers97/phase-field-crystals.git
+```
+The `--recurse-submodules` option is necessary because the library depends on an external TOML library to parse configuration files.
 
 To generate build files in a `build` directory:
 ```
