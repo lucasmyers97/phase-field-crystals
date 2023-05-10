@@ -30,6 +30,7 @@ target_link_libraries(PhaseFieldCrystalSystemMPI
     PUBLIC
     deal.II::Interface
     PhaseFieldFunctions
+    StressTools
     )
 
 install(TARGETS PhaseFieldCrystalSystem LIBRARY DESTINATION lib)

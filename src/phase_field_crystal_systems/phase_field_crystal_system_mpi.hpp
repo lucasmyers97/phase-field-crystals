@@ -1,6 +1,7 @@
 #ifndef PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 #define PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 
+#include "stress_tools/stress_calculator.hpp"
 #include <deal.II/base/mpi.h>
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/timer.h>
@@ -38,7 +39,8 @@ public:
                                const dealii::Point<dim> &lower_left,
                                const dealii::Point<dim> &upper_right,
 
-                               std::unique_ptr<dealii::Function<dim>> initial_condition);
+                               std::unique_ptr<dealii::Function<dim>> initial_condition
+                               );
     void run();
 
 private:
@@ -75,6 +77,10 @@ private:
     dealii::Point<dim> upper_right = {4 * M_PI / std::sqrt(3), 4 * M_PI / std::sqrt(3)};
 
     std::unique_ptr<dealii::Function<dim>> initial_condition;
+
+    std::unique_ptr<StressCalculator<dim, 
+        dealii::LinearAlgebraTrilinos::MPI::BlockVector, 
+        dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix>> stress_calculator;
 
     void make_grid();
     void setup_dofs();

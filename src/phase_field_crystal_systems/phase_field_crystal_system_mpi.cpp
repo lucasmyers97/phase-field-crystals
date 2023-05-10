@@ -48,6 +48,7 @@
 #include <utility>
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
+#include "stress_tools/stress_calculator.hpp"
 
 
 
@@ -66,7 +67,8 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
                            const dealii::Point<dim> &lower_left,
                            const dealii::Point<dim> &upper_right,
 
-                           std::unique_ptr<dealii::Function<dim>> initial_condition)
+                           std::unique_ptr<dealii::Function<dim>> initial_condition
+                           )
     : mpi_communicator(MPI_COMM_WORLD)
     , triangulation(mpi_communicator,
                     typename dealii::Triangulation<dim>::MeshSmoothing(
@@ -91,6 +93,7 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
     , n_refines(n_refines)
     , lower_left(lower_left)
     , upper_right(upper_right)
+
     , initial_condition(std::move(initial_condition))
 {}
 
@@ -626,6 +629,13 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
 
     pcout << "Initializing fe field!\n";
     initialize_fe_field();
+
+    pcout << "Initializing stress_calculator!\n";
+    using block_vec = dealii::LinearAlgebraTrilinos::MPI::BlockVector;
+    using block_mat = dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix;
+    stress_calculator 
+        = std::make_unique<StressCalculator<dim, block_vec, block_mat>>(triangulation, 
+                                                                        fe_system.degree);
 
     const unsigned int n_timesteps = 10000;
     for (unsigned int timestep = 0; timestep < n_timesteps; ++timestep)

@@ -22,3 +22,9 @@ template class StressCalculator<2,
 template class StressCalculator<2, 
                                 dealii::BlockVector<double>, 
                                 dealii::BlockSparseMatrix<double>>;
+template class StressCalculator<3, 
+                                dealii::LinearAlgebraTrilinos::MPI::BlockVector, 
+                                dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix>;
+template class StressCalculator<3, 
+                                dealii::BlockVector<double>, 
+                                dealii::BlockSparseMatrix<double>>;
