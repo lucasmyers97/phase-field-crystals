@@ -31,6 +31,7 @@ public:
                                double eps,
 
                                double dt,
+                               unsigned int n_timesteps,
                                double theta,
                                double simulation_tol,
                                unsigned int simulation_max_iters,
@@ -68,6 +69,7 @@ private:
     double eps = -0.8;
 
     double dt = 0.1;
+    unsigned int n_timesteps = 10;
     double theta = 1.0;
     double simulation_tol = 1e-8;
     unsigned int simulation_max_iters = 200;

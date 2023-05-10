@@ -59,6 +59,7 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
                            double eps,
 
                            double dt,
+                           unsigned int n_timesteps,
                            double theta,
                            double simulation_tol,
                            unsigned int simulation_max_iters,
@@ -87,6 +88,7 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
 
     , eps(eps)
     , dt(dt)
+    , n_timesteps(n_timesteps)
     , theta(theta)
     , simulation_tol(simulation_tol)
     , simulation_max_iters(simulation_max_iters)
@@ -635,7 +637,6 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
         = std::make_unique<StressCalculatorMPI<dim>>(triangulation, fe_system.degree);
     stress_calculator->setup_dofs(mpi_communicator);
 
-    const unsigned int n_timesteps = 10000;
     for (unsigned int timestep = 0; timestep < n_timesteps; ++timestep)
     {
         pcout << "Outputting configuration!\n";

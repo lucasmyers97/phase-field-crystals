@@ -16,6 +16,7 @@ parse_simulation_parameters(const toml::table& tbl)
     const auto degree = tbl["degree"].value<unsigned int>();
     const auto eps = tbl["eps"].value<double>();
     const auto dt = tbl["dt"].value<double>();
+    const auto n_timesteps = tbl["n_timesteps"].value<unsigned int>();
     const auto theta = tbl["theta"].value<double>();
     const auto simulation_tol = tbl["simulation_tol"].value<double>();
     const auto simulation_max_iters = tbl["simulation_max_iters"].value<unsigned int>();
@@ -25,6 +26,7 @@ parse_simulation_parameters(const toml::table& tbl)
     if (!degree) throw std::invalid_argument("No degree in parameter file");
     if (!eps) throw std::invalid_argument("No eps in parameter file");
     if (!dt) throw std::invalid_argument("No dt in parameter file");
+    if (!n_timesteps) throw std::invalid_argument("No n_timesteps in parameter file");
     if (!theta) throw std::invalid_argument("No theta in parameter file");
     if (!simulation_tol) throw std::invalid_argument("No simulation_tol in parameter file");
     if (!simulation_max_iters) throw std::invalid_argument("No simulation_max_iters in parameter file");
@@ -94,6 +96,7 @@ parse_simulation_parameters(const toml::table& tbl)
         = std::make_unique<PhaseFieldCrystalSystemMPI<dim>>(degree.value(),
                                                             eps.value(),
                                                             dt.value(),
+                                                            n_timesteps.value(),
                                                             theta.value(),
                                                             simulation_tol.value(),
                                                             simulation_max_iters.value(),
