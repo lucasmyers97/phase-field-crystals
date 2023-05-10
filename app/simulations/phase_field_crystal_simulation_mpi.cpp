@@ -134,7 +134,7 @@ int main(int ac, char* av[])
         }
         else if (dim.value() == 3)
         {
-            auto phase_field_crystal_system_mpi = parse_simulation_parameters<2>(tbl);
+            auto phase_field_crystal_system_mpi = parse_simulation_parameters<3>(tbl);
             phase_field_crystal_system_mpi->run();
         }
     }
