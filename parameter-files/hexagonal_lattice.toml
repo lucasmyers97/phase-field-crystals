@@ -1,0 +1,28 @@
+# This is a test parameter file
+
+dim = 2
+degree = 1
+
+eps = -0.8
+
+dt = 0.1
+theta = 1.0
+simulation_tol = 1e-8
+simulation_max_iters = 200
+
+# grid parameters
+n_refines = 6
+
+p1 = [-6, -5]
+p2 = [6, 5]
+scale_by_lattice_constant = true
+
+# initial values
+psi_0 = -0.43
+A_0 = "default"
+
+dislocation_positions = []
+burgers_vectors = []
+
+# dislocation_positions = [[2, 0], [-2, 0]]
+# burgers_vectors = [[1, 0], [-1, 0]]

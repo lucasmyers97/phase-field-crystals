@@ -636,7 +636,6 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
         pcout << "Outputting right-hand side!\n";
         output_rhs(timestep);
 
-
         pcout << "\n";
         pcout << "Iterating timestep: " << timestep << "\n";
         iterate_timestep();

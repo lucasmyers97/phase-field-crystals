@@ -13,6 +13,7 @@ add_executable(phase_field_crystal_simulation_mpi
 target_link_libraries(phase_field_crystal_simulation_mpi
     PRIVATE
     PhaseFieldCrystalSystemMPI
+    toml
     )
 
 install(TARGETS phase_field_crystal_simulation DESTINATION bin)

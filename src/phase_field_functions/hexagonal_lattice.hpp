@@ -30,6 +30,9 @@ public:
     //                         const unsigned int component = 0) const override;
     // virtual void vector_value_list(const std::vector<dealii::Point<dim>> &points,
     //                                std::vector<dealii::Vector<double>> &values) const override;
+    
+    // 4 \pi / \sqrt{3}
+    static constexpr double a = 4 * M_PI * 0.5773502691896257645091487805019574556476017;
 
 private:
     // lattice quantities
