@@ -1,5 +1,5 @@
 add_library(StressTools
-    stress_calculator.cpp
+    stress_calculator_mpi.cpp
     )
 
 target_include_directories(StressTools

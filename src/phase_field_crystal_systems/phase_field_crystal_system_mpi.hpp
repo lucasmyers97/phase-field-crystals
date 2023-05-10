@@ -1,7 +1,7 @@
 #ifndef PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 #define PHASE_FIELD_CRYSTAL_SYSTEM_MPI_HPP
 
-#include "stress_tools/stress_calculator.hpp"
+#include "stress_tools/stress_calculator_mpi.hpp"
 #include <deal.II/base/mpi.h>
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/timer.h>
@@ -78,9 +78,7 @@ private:
 
     std::unique_ptr<dealii::Function<dim>> initial_condition;
 
-    std::unique_ptr<StressCalculator<dim, 
-        dealii::LinearAlgebraTrilinos::MPI::BlockVector, 
-        dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix>> stress_calculator;
+    std::unique_ptr<StressCalculatorMPI<dim>> stress_calculator;
 
     void make_grid();
     void setup_dofs();
