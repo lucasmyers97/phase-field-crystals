@@ -139,6 +139,8 @@ void PhaseFieldCrystalSystemMPI<dim>::make_grid()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
 {
+    dealii::TimerOutput::Scope t(timer, "setup dofs");
+
     dof_handler.distribute_dofs(fe_system);
 
     std::vector<unsigned int> block_component = {0, 1, 2};
@@ -265,6 +267,7 @@ void PhaseFieldCrystalSystemMPI<dim>::setup_dofs()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::initialize_fe_field()
 {
+    dealii::TimerOutput::Scope t(timer, "initialize fe field");
 
     dealii::LinearAlgebraTrilinos::MPI::BlockVector Psi_0(owned_partitioning, 
                                                           mpi_communicator);
@@ -286,6 +289,8 @@ void PhaseFieldCrystalSystemMPI<dim>::initialize_fe_field()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
 {
+    dealii::TimerOutput::Scope t(timer, "assembly");
+
     system_matrix = 0;
     system_rhs = 0;
 
@@ -454,7 +459,8 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::solve_and_update_no_precondition()
 {
-    using vec = dealii::LinearAlgebraTrilinos::MPI::Vector;
+    dealii::TimerOutput::Scope t(timer, "solver");
+
     using block_vec = dealii::LinearAlgebraTrilinos::MPI::BlockVector;
 
     dealii::SolverControl solver_control(dof_handler.n_dofs());
@@ -579,6 +585,8 @@ void PhaseFieldCrystalSystemMPI<dim>::iterate_timestep()
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::output_configuration(unsigned int iteration)
 {
+    dealii::TimerOutput::Scope t(timer, "output configuration");
+
     std::vector<std::string> field_names = {"psi", "chi", "phi"};
     std::vector<dealii::DataComponentInterpretation::DataComponentInterpretation>
         data_component_interpretation(3, dealii::DataComponentInterpretation::component_is_scalar);
@@ -601,6 +609,8 @@ void PhaseFieldCrystalSystemMPI<dim>::output_configuration(unsigned int iteratio
 template <int dim>
 void PhaseFieldCrystalSystemMPI<dim>::output_rhs(unsigned int iteration)
 {
+    dealii::TimerOutput::Scope t(timer, "output right-hand side");
+
     std::vector<std::string> field_names = {"psi", "chi", "phi"};
     std::vector<dealii::DataComponentInterpretation::DataComponentInterpretation>
         data_component_interpretation(3, dealii::DataComponentInterpretation::component_is_scalar);
@@ -649,6 +659,8 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
         pcout << "Iterating timestep: " << timestep << "\n";
         iterate_timestep();
     }
+
+    timer.print_summary();
 }
 
 
