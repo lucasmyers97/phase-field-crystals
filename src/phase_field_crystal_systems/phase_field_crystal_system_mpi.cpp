@@ -46,6 +46,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <filesystem>
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 #include "stress_tools/stress_calculator_mpi.hpp"
@@ -55,6 +56,10 @@
 template <int dim>
 PhaseFieldCrystalSystemMPI<dim>::
 PhaseFieldCrystalSystemMPI(unsigned int degree,
+
+                           const std::filesystem::path &data_folder,
+                           const std::filesystem::path &configuration_filename,
+                           const std::filesystem::path &rhs_filename,
 
                            double eps,
 
@@ -85,6 +90,10 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
             pcout,
             dealii::TimerOutput::never,
             dealii::TimerOutput::wall_times)
+
+    , data_folder(data_folder)
+    , configuration_filename(configuration_filename)
+    , rhs_filename(rhs_filename)
 
     , eps(eps)
     , dt(dt)
@@ -599,7 +608,9 @@ void PhaseFieldCrystalSystemMPI<dim>::output_configuration(unsigned int iteratio
                              data_component_interpretation);
     data_out.build_patches();
 
-    data_out.write_vtu_with_pvtu_record("./", "phase_field_", iteration,
+    data_out.write_vtu_with_pvtu_record(data_folder.string(), 
+                                        configuration_filename.stem(), 
+                                        iteration,
                                         mpi_communicator,
                                         /*n_digits_for_counter*/2);
 }
@@ -623,7 +634,9 @@ void PhaseFieldCrystalSystemMPI<dim>::output_rhs(unsigned int iteration)
                              data_component_interpretation);
     data_out.build_patches();
 
-    data_out.write_vtu_with_pvtu_record("./", "phase_field_rhs_", iteration,
+    data_out.write_vtu_with_pvtu_record(data_folder.string(), 
+                                        rhs_filename.stem(), 
+                                        iteration,
                                         mpi_communicator,
                                         /*n_digits_for_counter*/2);
 }

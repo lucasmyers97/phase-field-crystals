@@ -21,12 +21,17 @@
 
 #include <memory>
 #include <utility>
+#include <filesystem>
 
 template <int dim>
 class PhaseFieldCrystalSystemMPI
 {
 public:
     PhaseFieldCrystalSystemMPI(unsigned int degree,
+
+                               const std::filesystem::path &data_folder,
+                               const std::filesystem::path &configuration_filename,
+                               const std::filesystem::path &rhs_filename,
 
                                double eps,
 
@@ -65,6 +70,10 @@ private:
 
     dealii::ConditionalOStream pcout;
     dealii::TimerOutput timer;
+
+    std::filesystem::path data_folder = "./";
+    std::filesystem::path configuration_filename = "phase_field_";
+    std::filesystem::path rhs_filename = "phase_field_rhs_";
 
     double eps = -0.8;
 

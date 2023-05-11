@@ -3,6 +3,8 @@
 
 #include <memory>
 #include <utility>
+#include <string>
+#include <filesystem>
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 #include "phase_field_crystal_systems/phase_field_crystal_system_mpi.hpp"
@@ -12,6 +14,20 @@ template <int dim>
 std::unique_ptr<PhaseFieldCrystalSystemMPI<dim>>
 parse_simulation_parameters(const toml::table& tbl)
 {
+    // filesystem parameters
+    const auto data_folder = tbl["data_folder"].value<std::string>();
+    const auto configuration_filename = tbl["configuration_filename"].value<std::string>();
+    const auto rhs_filename = tbl["rhs_filename"].value<std::string>();
+
+    // throw excetion for missing parameters
+    if (!data_folder) throw std::invalid_argument("No data folder in parameter file");
+    if (!configuration_filename) throw std::invalid_argument("No configuration filename in parameter file");
+    if (!rhs_filename) throw std::invalid_argument("No rhs filename in parameter file");
+
+    const auto data_folder_fs = std::filesystem::path(data_folder.value());
+    const auto configuration_filename_fs = std::filesystem::path(configuration_filename.value());
+    const auto rhs_filename_fs = std::filesystem::path(rhs_filename.value());
+
     // simulation parameters
     const auto degree = tbl["degree"].value<unsigned int>();
     const auto eps = tbl["eps"].value<double>();
@@ -94,6 +110,9 @@ parse_simulation_parameters(const toml::table& tbl)
 
     std::unique_ptr<PhaseFieldCrystalSystemMPI<dim>> phase_field_crystal_system_mpi
         = std::make_unique<PhaseFieldCrystalSystemMPI<dim>>(degree.value(),
+                                                            data_folder_fs,
+                                                            configuration_filename_fs,
+                                                            rhs_filename_fs,
                                                             eps.value(),
                                                             dt.value(),
                                                             n_timesteps.value(),

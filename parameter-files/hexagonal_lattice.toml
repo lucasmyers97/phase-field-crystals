@@ -3,6 +3,10 @@
 dim = 2
 degree = 1
 
+data_folder = "./temp-data/"
+configuration_filename = "phase_field.vtu"
+rhs_filename = "phase_field_rhs.vtu"
+
 eps = -0.8
 
 dt = 0.1
