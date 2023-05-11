@@ -3,14 +3,16 @@
 dim = 2
 degree = 1
 
+# file system
 data_folder = "./temp-data/"
 configuration_filename = "phase_field.vtu"
 rhs_filename = "phase_field_rhs.vtu"
+output_interval = 10
 
 eps = -0.8
 
 dt = 0.1
-n_timesteps = 2
+n_timesteps = 10
 theta = 1.0
 simulation_tol = 1e-8
 simulation_max_iters = 200

@@ -60,6 +60,7 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
                            const std::filesystem::path &data_folder,
                            const std::filesystem::path &configuration_filename,
                            const std::filesystem::path &rhs_filename,
+                           unsigned int output_interval,
 
                            double eps,
 
@@ -94,6 +95,7 @@ PhaseFieldCrystalSystemMPI(unsigned int degree,
     , data_folder(data_folder)
     , configuration_filename(configuration_filename)
     , rhs_filename(rhs_filename)
+    , output_interval(output_interval)
 
     , eps(eps)
     , dt(dt)
@@ -655,22 +657,32 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
     pcout << "Initializing fe field!\n";
     initialize_fe_field();
 
+    pcout << "Outputting initial configuration!\n";
+    output_configuration(/*timestep = */0);
+
+    pcout << "Outputting initial right-hand side!\n";
+    output_rhs(/*timestep = */0);
+
     pcout << "Initializing stress_calculator!\n";
     stress_calculator 
         = std::make_unique<StressCalculatorMPI<dim>>(triangulation, fe_system.degree);
     stress_calculator->setup_dofs(mpi_communicator);
 
-    for (unsigned int timestep = 0; timestep < n_timesteps; ++timestep)
+    for (unsigned int timestep = 1; timestep <= n_timesteps; ++timestep)
     {
-        pcout << "Outputting configuration!\n";
-        output_configuration(timestep);
-
-        pcout << "Outputting right-hand side!\n";
-        output_rhs(timestep);
-
-        pcout << "\n";
         pcout << "Iterating timestep: " << timestep << "\n";
         iterate_timestep();
+
+        if ((timestep % output_interval) == 0)
+        {
+            pcout << "Outputting configuration!\n";
+            output_configuration(timestep);
+
+            pcout << "Outputting right-hand side!\n";
+            output_rhs(timestep);
+        }
+
+        pcout << "\n";
     }
 
     timer.print_summary();

@@ -18,11 +18,13 @@ parse_simulation_parameters(const toml::table& tbl)
     const auto data_folder = tbl["data_folder"].value<std::string>();
     const auto configuration_filename = tbl["configuration_filename"].value<std::string>();
     const auto rhs_filename = tbl["rhs_filename"].value<std::string>();
+    const auto output_interval = tbl["output_interval"].value<unsigned int>();
 
     // throw excetion for missing parameters
     if (!data_folder) throw std::invalid_argument("No data folder in parameter file");
     if (!configuration_filename) throw std::invalid_argument("No configuration filename in parameter file");
     if (!rhs_filename) throw std::invalid_argument("No rhs filename in parameter file");
+    if (!output_interval) throw std::invalid_argument("No output_interval in parameter file");
 
     const auto data_folder_fs = std::filesystem::path(data_folder.value());
     const auto configuration_filename_fs = std::filesystem::path(configuration_filename.value());
@@ -113,6 +115,7 @@ parse_simulation_parameters(const toml::table& tbl)
                                                             data_folder_fs,
                                                             configuration_filename_fs,
                                                             rhs_filename_fs,
+                                                            output_interval.value(),
                                                             eps.value(),
                                                             dt.value(),
                                                             n_timesteps.value(),

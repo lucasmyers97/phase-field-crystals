@@ -32,6 +32,7 @@ public:
                                const std::filesystem::path &data_folder,
                                const std::filesystem::path &configuration_filename,
                                const std::filesystem::path &rhs_filename,
+                               unsigned int output_interval,
 
                                double eps,
 
@@ -74,6 +75,7 @@ private:
     std::filesystem::path data_folder = "./";
     std::filesystem::path configuration_filename = "phase_field_";
     std::filesystem::path rhs_filename = "phase_field_rhs_";
+    unsigned int output_interval = 1;
 
     double eps = -0.8;
 
