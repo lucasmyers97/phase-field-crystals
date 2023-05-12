@@ -14,16 +14,18 @@ class StressCalculatorMPI
 public:
     StressCalculatorMPI(const dealii::Triangulation<dim> &tria,
                         const unsigned int degree);
-    void calculate_stress(const dealii::DoFHandler<dim> &Psi_dof_handler,
-                          const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi,
-                          double eps);
+    std::vector<unsigned int> calculate_stress(const MPI_Comm& mpi_communicator,
+                                               const dealii::DoFHandler<dim> &Psi_dof_handler,
+                                               const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi,
+                                               double eps);
     void setup_dofs(const MPI_Comm& mpi_communicator);
     void calculate_mass_matrix();
+
+private:
     void calculate_righthand_side(const dealii::DoFHandler<dim> &Psi_dof_handler,
                                   const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi,
                                   double eps);
-
-private:
+    std::vector<unsigned int> solve(const MPI_Comm& mpi_communicator);
 
     dealii::DoFHandler<dim> dof_handler;
     dealii::FESystem<dim> fe_system;
@@ -31,7 +33,7 @@ private:
 
     dealii::LinearAlgebraTrilinos::MPI::BlockSparseMatrix system_matrix;
     dealii::LinearAlgebraTrilinos::MPI::BlockVector system_rhs;
-    dealii::LinearAlgebraTrilinos::MPI::BlockVector sigma;
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector stress;
 
     std::vector<dealii::IndexSet> owned_partitioning;
     std::vector<dealii::IndexSet> relevant_partitioning;

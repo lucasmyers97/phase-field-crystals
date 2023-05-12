@@ -13,6 +13,10 @@
 #include <deal.II/lac/generic_linear_algebra.h>
 #include <deal.II/lac/block_vector.h>
 #include <deal.II/lac/block_sparse_matrix.h>
+#include <deal.II/lac/precondition.h>
+#include <deal.II/lac/solver_control.h>
+#include <deal.II/lac/solver_cg.h>
+#include <deal.II/lac/trilinos_precondition.h>
 
 #include <deal.II/dofs/dof_renumbering.h>
 #include <deal.II/dofs/dof_tools.h>
@@ -298,6 +302,49 @@ calculate_righthand_side(const dealii::DoFHandler<dim> &Psi_dof_handler,
     }
 
     system_rhs.compress(dealii::VectorOperation::add);
+}
+
+
+
+template <int dim>
+std::vector<unsigned int> StressCalculatorMPI<dim>::
+solve(const MPI_Comm& mpi_communicator)
+{
+    dealii::SolverControl solver_control(dof_handler.n_dofs());
+
+    using vec = dealii::LinearAlgebraTrilinos::MPI::Vector;
+    dealii::SolverCG<vec> solver_cg(solver_control);
+    dealii::LinearAlgebraTrilinos::MPI::BlockVector 
+        completely_distributed_stress(owned_partitioning, mpi_communicator);
+
+    std::vector<unsigned int> n_iterations(dim*dim);
+    for (unsigned int i = 0; i < (dim * dim); ++i)
+    {
+        solver_cg.solve(system_matrix.block(i, i), 
+                        completely_distributed_stress.block(i), 
+                        system_rhs.block(i), 
+                        dealii::PreconditionIdentity());
+        n_iterations[i] = solver_control.last_step();
+    }
+
+    constraints.distribute(completely_distributed_stress);
+
+    stress = completely_distributed_stress;
+
+    return n_iterations;
+}
+
+
+
+template <int dim>
+std::vector<unsigned int> StressCalculatorMPI<dim>::
+calculate_stress(const MPI_Comm& mpi_communicator,
+                 const dealii::DoFHandler<dim> &Psi_dof_handler, 
+                 const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi, 
+                 double eps)
+{
+    calculate_righthand_side(Psi_dof_handler, Psi, eps);
+    return solve(mpi_communicator);
 }
 
 

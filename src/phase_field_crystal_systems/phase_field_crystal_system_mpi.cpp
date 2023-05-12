@@ -670,12 +670,22 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
 
     stress_calculator->setup_dofs(mpi_communicator);
     stress_calculator->calculate_mass_matrix();
-    stress_calculator->calculate_righthand_side(dof_handler, Psi_n, eps);
+    auto n_stress_iterations = stress_calculator->calculate_stress(mpi_communicator,
+                                                                   dof_handler,
+                                                                   Psi_n,
+                                                                   eps);
+    for (unsigned int i = 0; i < dim*dim; ++i)
+        pcout << "Number of stress iterations: " << n_stress_iterations[i] << "\n";
 
     for (unsigned int timestep = 1; timestep <= n_timesteps; ++timestep)
     {
         pcout << "Iterating timestep: " << timestep << "\n";
         iterate_timestep();
+
+        stress_calculator->calculate_stress(mpi_communicator,
+                                            dof_handler,
+                                            Psi_n,
+                                            eps);
 
         if ((timestep % output_interval) == 0)
         {
