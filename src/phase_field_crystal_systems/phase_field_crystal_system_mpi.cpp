@@ -357,20 +357,21 @@ void PhaseFieldCrystalSystemMPI<dim>::assemble_system()
         local_preconditioner_matrix = 0;
         local_rhs = 0;
 
+        fe_values[psi].get_function_values(Psi_n, psi_n);
+        fe_values[chi].get_function_values(Psi_n, chi_n);
+        fe_values[phi].get_function_values(Psi_n, phi_n);
+        fe_values[psi].get_function_values(Psi_n_1, psi_n_1);
+        fe_values[chi].get_function_values(Psi_n_1, chi_n_1);
+        fe_values[phi].get_function_values(Psi_n_1, phi_n_1);
+        fe_values[psi].get_function_gradients(Psi_n, grad_psi_n);
+        fe_values[chi].get_function_gradients(Psi_n, grad_chi_n);
+        fe_values[phi].get_function_gradients(Psi_n, grad_phi_n);
+        fe_values[psi].get_function_gradients(Psi_n_1, grad_psi_n_1);
+        fe_values[chi].get_function_gradients(Psi_n_1, grad_chi_n_1);
+        fe_values[phi].get_function_gradients(Psi_n_1, grad_phi_n_1);
+
         for (const unsigned int q : fe_values.quadrature_point_indices())
         {
-            fe_values[psi].get_function_values(Psi_n, psi_n);
-            fe_values[chi].get_function_values(Psi_n, chi_n);
-            fe_values[phi].get_function_values(Psi_n, phi_n);
-            fe_values[psi].get_function_values(Psi_n_1, psi_n_1);
-            fe_values[chi].get_function_values(Psi_n_1, chi_n_1);
-            fe_values[phi].get_function_values(Psi_n_1, phi_n_1);
-            fe_values[psi].get_function_gradients(Psi_n, grad_psi_n);
-            fe_values[chi].get_function_gradients(Psi_n, grad_chi_n);
-            fe_values[phi].get_function_gradients(Psi_n, grad_phi_n);
-            fe_values[psi].get_function_gradients(Psi_n_1, grad_psi_n_1);
-            fe_values[chi].get_function_gradients(Psi_n_1, grad_chi_n_1);
-            fe_values[phi].get_function_gradients(Psi_n_1, grad_phi_n_1);
 
             for (unsigned int k = 0; k < dofs_per_cell; ++k)
             {
@@ -666,7 +667,9 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
     pcout << "Initializing stress_calculator!\n";
     stress_calculator 
         = std::make_unique<StressCalculatorMPI<dim>>(triangulation, fe_system.degree);
+
     stress_calculator->setup_dofs(mpi_communicator);
+    stress_calculator->calculate_mass_matrix();
 
     for (unsigned int timestep = 1; timestep <= n_timesteps; ++timestep)
     {
