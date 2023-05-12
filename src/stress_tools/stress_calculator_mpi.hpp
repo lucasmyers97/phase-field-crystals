@@ -14,11 +14,17 @@ class StressCalculatorMPI
 public:
     StressCalculatorMPI(const dealii::Triangulation<dim> &tria,
                         const unsigned int degree);
-    void calculate_stress(const dealii::DoFHandler<dim> &dof_handler,
-                          const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi);
+    void calculate_stress(const dealii::DoFHandler<dim> &Psi_dof_handler,
+                          const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi,
+                          double eps);
     void setup_dofs(const MPI_Comm& mpi_communicator);
+    void calculate_mass_matrix();
+    void calculate_righthand_side(const dealii::DoFHandler<dim> &Psi_dof_handler,
+                                  const dealii::LinearAlgebraTrilinos::MPI::BlockVector &Psi,
+                                  double eps);
 
 private:
+
     dealii::DoFHandler<dim> dof_handler;
     dealii::FESystem<dim> fe_system;
     dealii::AffineConstraints<double> constraints;

@@ -670,6 +670,7 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
 
     stress_calculator->setup_dofs(mpi_communicator);
     stress_calculator->calculate_mass_matrix();
+    stress_calculator->calculate_righthand_side(dof_handler, Psi_n, eps);
 
     for (unsigned int timestep = 1; timestep <= n_timesteps; ++timestep)
     {

@@ -848,38 +848,66 @@ Now note that we will not actually be able to calculate this at each of the quad
 Because we are using piecewise linear elements, we need to write down a weak form if we are to accurately calculate the higher order derivatives.
 Taking the inner product with a tensor test function $\tau$ yields:
 \begin{equation}
-    \begin{split}
         \left< \tau, \sigma \right>
-        &=
+        =
         \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
         - \left< \tau, (\psi + \chi) \nabla(\nabla \psi) \right>
-        + \tfrac12 \left< \tau, \left(\chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right) I \right> \\
+        + \tfrac12 \left< \tau, \left(\chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right) I \right> 
+\end{equation}
+Because $\tau$ and $\sigma$ are not symmetric tensors, we need to be careful with indexing.
+To this end, we write the inner product as:
+\begin{equation}
+    \begin{split}
+        \int_\Omega \tau_{ij} \sigma_{ij}
+        &=
+        \int_\Omega \tau_{ij} \partial_i \left( \psi + \chi \right) \partial_j \psi 
+        - \int_\Omega \tau_{ij} (\psi + \chi) \partial_i \partial_j \psi 
+        + \tfrac12 \int_\Omega \tau_{ij} \left(\chi^2 + 2 \psi \partial_k \partial_k \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right) \delta_{ij} \\
         &=
         \begin{multlined}[t]
-            \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
-            + \left< \nabla \cdot \left((\psi + \chi) \tau \right), \nabla \psi \right>
-            - \left< (\psi + \chi) \mathbf{n} \cdot \tau, \nabla \psi \right>_{\partial \Omega} \\
-            + \tfrac12 \left< \text{tr}(\tau), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4  \right>
+            \int_\Omega \tau_{ij} \partial_i \left( \psi + \chi \right)  \partial_j \psi 
+            +\int_\Omega \partial_j \left((\psi + \chi) \tau_{ij}\right) \partial_i \psi
+            - \int_{\partial \Omega} n_j \tau_{ij} (\psi + \chi) \partial_i \psi \\
+            + \tfrac12 \int_\Omega \tau_{ii} \left(\chi^2 + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4\right)
+            - \int_\Omega \partial_k \left(\psi \tau_{ii}\right) \partial_k \psi
+            + \int_{\partial \Omega} n_k \psi \tau_{ii} \partial_k \psi
+        \end{multlined} \\
+        &= 
+        \begin{multlined}[t]
+            \int_\Omega \tau_{ij} \left(\partial_i \left( \psi + \chi \right) \partial_j \psi 
+                + \partial_j (\psi + \chi)  \partial_i \psi \right)
+            + \int_\Omega (\psi + \chi) \partial_j  \tau_{ij} \partial_i \psi
+            - \int_{\partial \Omega} n_j \tau_{ij} (\psi + \chi) \partial_i \psi \\
+            + \tfrac12 \int_\Omega \tau_{ii} \left(\chi^2 + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4\right)
+            - \int_\Omega \partial_k \tau_{ii} \psi \partial_k \psi
+            - \int_\Omega \tau_{ii} \psi \left(\partial_k \psi\right)^2
+            + \int_{\partial \Omega} n_k \tau_{ii} \psi \partial_k \psi
         \end{multlined} \\
         &=
         \begin{multlined}[t]
-            \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
-            + \left< (\nabla \psi + \nabla \chi) \cdot  \tau , \nabla \psi \right>
-            + \left< (\psi + \chi) \nabla \cdot \tau, \nabla \psi \right>
-            - \left< (\psi + \chi) \mathbf{n} \cdot \tau, \nabla \psi \right>_{\partial \Omega} \\
-            + \tfrac12 \left< \text{tr}(\tau), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right>
-        \end{multlined} \\
+            \left< \tau, \nabla \left( \psi + \chi \right)\otimes \nabla \psi 
+                + \nabla \psi \otimes \nabla (\psi + \chi) \right>
+            + \left<\text{div} \, \tau, (\psi + \chi) \nabla \psi \right>
+            - \left< \tau \cdot \mathbf{n} (\psi + \chi), \nabla \psi \right>_{\partial \Omega} \\
+            + \tfrac12 \left< \text{tr}(\tau), \chi^2 + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4\right>
+            - \left< \nabla \text{tr}(\tau), \psi \nabla \psi \right>
+            - \left< \text{tr}(\tau), \left(\nabla \psi\right)^2 \right>
+            + \left< \mathbf{n} \, \text{tr}(\tau), \psi \nabla \psi \right>_{\partial \Omega}
+        \end{multlined}
     \end{split}
 \end{equation}
+where here $(\text{div}(\tau))_{i} = \partial_j \tau_{ij}$ as in the deal.II documentation, and contractions are over the closest indices.
 Given that we're working with periodic boundary conditions, there is no boundary so the equation reduces to:
 \begin{equation}
     \left< \tau, \sigma \right>
     =
     \begin{multlined}[t]
-        \left< \tau, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
-        + \left< (\nabla \psi + \nabla \chi) \cdot  \tau , \nabla \psi \right>
-        + \left< (\psi + \chi) \nabla \cdot \tau, \nabla \psi \right>\\
-        + \tfrac12 \left< \text{tr}(\tau), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right>
+        \left< \tau, \nabla \left( \psi + \chi \right)\otimes \nabla \psi 
+            + \nabla \psi \otimes \nabla (\psi + \chi) \right>
+        + \left<\text{div} \, \tau, (\psi + \chi) \nabla \psi \right> \\
+        + \tfrac12 \left< \text{tr}(\tau), \chi^2 + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4\right>
+        - \left< \nabla \text{tr}(\tau), \psi \nabla \psi \right>
+        - \left< \text{tr}(\tau), \left(\nabla \psi\right)^2 \right>
     \end{multlined}
 \end{equation}
 To actually project this onto a finite element space, we consider an approximation of $\sigma$:
@@ -902,10 +930,12 @@ is the mass matrix and
     b_i
     =
     \begin{multlined}[t]
-        \left< \tau_i, \nabla \left( \psi + \chi \right) \otimes (\nabla \psi) \right>
-        + \left< (\nabla \psi + \nabla \chi) \cdot  \tau_i, \nabla \psi \right>
-        + \left< (\psi + \chi) \nabla \cdot \tau_i, \nabla \psi \right>\\
-        + \tfrac12 \left< \text{tr}(\tau_i), \chi^2 + 2 \psi \nabla^2 \psi + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4 \right>
+        \left< \tau_i, \nabla \left( \psi + \chi \right)\otimes \nabla \psi 
+            + \nabla \psi \otimes \nabla (\psi + \chi) \right>
+        + \left<\text{div} \, \tau_i, (\psi + \chi) \nabla \psi \right> \\
+        + \tfrac12 \left< \text{tr}(\tau_i), \chi^2 + (1 + \epsilon) \psi^2 + \tfrac12 \psi^4\right>
+        - \left< \nabla \text{tr}(\tau_i), \psi \nabla \psi \right>
+        - \left< \text{tr}(\tau_i), \left(\nabla \psi\right)^2 \right>
     \end{multlined}
 \end{equation}
 
