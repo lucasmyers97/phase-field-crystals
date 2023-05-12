@@ -8,6 +8,9 @@
 
 #include <deal.II/base/mpi.h>
 
+#include <vector>
+#include <filesystem>
+
 template <int dim>
 class StressCalculatorMPI
 {
@@ -20,6 +23,10 @@ public:
                                                double eps);
     void setup_dofs(const MPI_Comm& mpi_communicator);
     void calculate_mass_matrix();
+    void output_stress(const MPI_Comm& mpi_communicator,
+                       std::filesystem::path data_folder,
+                       std::filesystem::path stress_filename,
+                       unsigned int iteration);
 
 private:
     void calculate_righthand_side(const dealii::DoFHandler<dim> &Psi_dof_handler,

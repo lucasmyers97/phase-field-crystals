@@ -8,6 +8,9 @@
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_tools.h>
 
+#include <deal.II/numerics/data_out.h>
+#include <deal.II/numerics/data_component_interpretation.h>
+
 #include <deal.II/fe/fe_q.h>
 
 #include <deal.II/lac/generic_linear_algebra.h>
@@ -20,6 +23,9 @@
 
 #include <deal.II/dofs/dof_renumbering.h>
 #include <deal.II/dofs/dof_tools.h>
+
+#include <vector>
+#include <filesystem>
 
 template <int dim>
 StressCalculatorMPI<dim>::
@@ -345,6 +351,36 @@ calculate_stress(const MPI_Comm& mpi_communicator,
 {
     calculate_righthand_side(Psi_dof_handler, Psi, eps);
     return solve(mpi_communicator);
+}
+
+
+
+template <int dim>
+void StressCalculatorMPI<dim>::
+output_stress(const MPI_Comm& mpi_communicator,
+              std::filesystem::path data_folder,
+              std::filesystem::path stress_filename,
+              unsigned int iteration)
+{
+    std::string data_name = "stress";
+
+    std::vector<dealii::DataComponentInterpretation::DataComponentInterpretation>
+        data_component_interpretation(dim*dim, 
+                                      dealii::DataComponentInterpretation::component_is_part_of_tensor);
+
+    dealii::DataOut<dim> data_out;
+    data_out.attach_dof_handler(dof_handler);
+    data_out.add_data_vector(stress,
+                             data_name,
+                             dealii::DataOut<dim>::type_dof_data,
+                             data_component_interpretation);
+    data_out.build_patches();
+
+    data_out.write_vtu_with_pvtu_record(data_folder.string(), 
+                                        stress_filename.stem(), 
+                                        iteration,
+                                        mpi_communicator,
+                                        /*n_digits_for_counter*/2);
 }
 
 

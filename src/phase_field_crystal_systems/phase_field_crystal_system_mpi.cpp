@@ -677,6 +677,11 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
     for (unsigned int i = 0; i < dim*dim; ++i)
         pcout << "Number of stress iterations: " << n_stress_iterations[i] << "\n";
 
+    stress_calculator->output_stress(mpi_communicator,
+                                     data_folder,
+                                     std::filesystem::path("stress.vtu"),
+                                     0);
+
     for (unsigned int timestep = 1; timestep <= n_timesteps; ++timestep)
     {
         pcout << "Iterating timestep: " << timestep << "\n";
@@ -686,6 +691,10 @@ void PhaseFieldCrystalSystemMPI<dim>::run()
                                             dof_handler,
                                             Psi_n,
                                             eps);
+        stress_calculator->output_stress(mpi_communicator,
+                                         data_folder,
+                                         std::filesystem::path("stress.vtu"),
+                                         0);
 
         if ((timestep % output_interval) == 0)
         {
