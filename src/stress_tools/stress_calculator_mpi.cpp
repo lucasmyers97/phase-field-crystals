@@ -362,7 +362,7 @@ output_stress(const MPI_Comm& mpi_communicator,
               std::filesystem::path stress_filename,
               unsigned int iteration)
 {
-    std::string data_name = "stress";
+    std::vector<std::string> data_name(dim*dim, "stress");
 
     std::vector<dealii::DataComponentInterpretation::DataComponentInterpretation>
         data_component_interpretation(dim*dim, 
