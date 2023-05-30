@@ -1,4 +1,5 @@
 add_subdirectory(parameters)
 add_subdirectory(phase_field_functions)
-add_subdirectory(phase_field_crystal_systems)
 add_subdirectory(stress_tools)
+add_subdirectory(numerics)
+add_subdirectory(phase_field_crystal_systems)
