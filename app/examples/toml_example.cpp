@@ -15,102 +15,121 @@ int main(int argc, char** argv)
     try
     {
         tbl = toml::parse_file(argv[1]);
-        std::cout << tbl << "\n";
+        // std::cout << tbl << "\n";
+        auto p1 = toml::convert<std::vector<double>>(*tbl["p1"].as_array());
 
-        const auto dim = tbl["dim"].value<int>();
-        const auto degree = tbl["degree"].value<unsigned int>();
+        for (const auto p : p1)
+            std::cout << p << "\n";
 
-        const auto eps = tbl["eps"].value<double>();
+        auto dislocation_positions 
+            = toml::convert<std::vector<std::vector<double>>>(
+                    *tbl["dislocation_positions"].as_array()
+                    );
 
-        const auto dt = tbl["dt"].value<double>();
-        const auto theta = tbl["theta"].value<double>();
-        const auto simulation_tol = tbl["simulation_tol"].value<double>();
-        const auto simulation_max_iters = tbl["simulation_max_iters"].value<unsigned int>();
-
-        const auto n_refines = tbl["n_refines"].value<unsigned int>();
-
-        if (!dim) throw std::invalid_argument("No dim in parameter file");
-        if (!degree) throw std::invalid_argument("No degree in parameter file");
-        if (!eps) throw std::invalid_argument("No eps in parameter file");
-        if (!dt) throw std::invalid_argument("No dt in parameter file");
-        if (!theta) throw std::invalid_argument("No theta in parameter file");
-        if (!simulation_tol) throw std::invalid_argument("No simulation_tol in parameter file");
-        if (!simulation_max_iters) throw std::invalid_argument("No simulation_max_iters in parameter file");
-        if (!n_refines) throw std::invalid_argument("No n_refines in parameter file");
-
-        dealii::Point<2> p1;
-        if (toml::array* p1_array = tbl["p1"].as_array())
+        for (const auto& position : dislocation_positions)
         {
-            p1 = toml::convert<dealii::Point<2>>(*p1_array);
-        }
-        else 
-        {
-            throw std::invalid_argument("p1 is not an array!");
+            for (auto num : position)
+                std::cout << num << " ";
+
+            std::cout << "\n";
         }
 
-        dealii::Point<2> p2;
-        if (toml::array* p2_array = tbl["p2"].as_array())
-        {
-            p2 = toml::convert<dealii::Point<2>>(*p2_array);
-        }
-        else 
-        {
-            throw std::invalid_argument("p1 is not an array!");
-        }
 
-        const auto scale_by_lattice_constant = tbl["scale_by_lattice_constant"].value<bool>();
-
-        const double a = 4 * M_PI / std::sqrt(3);
-        if (scale_by_lattice_constant.value())
-        {
-            p1 *= a;
-            p2 *= a;
-        }
-
-        const auto psi_0 = tbl["psi_0"].value<double>();
-        double A_0 = 0;
-        if (tbl["A_0"].is_number())
-            A_0 = tbl["A_0"].value<double>().value();
-        else if (tbl["A_0"].is_string() 
-                 && tbl["A_0"].value<std::string>().value() == "default")
-            A_0 = 0.2 * (std::abs(*psi_0)
-                    + (1.0 / 3.0) * std::sqrt(-15 * *eps - 36 * (*psi_0) * (*psi_0)));
-        else
-            throw std::invalid_argument("Incorrect input for A_0");
-
-        std::vector<dealii::Tensor<1, 2>> dislocation_positions;
-        if (toml::array* dislocation_positions_array = tbl["dislocation_positions"].as_array())
-        {
-            dislocation_positions = toml::convert<std::vector<dealii::Tensor<1, 2>>>(*dislocation_positions_array);
-        }
-        else
-        {
-            throw std::invalid_argument("Incorrect input for dislocation positions");
-        }
-
-        if (scale_by_lattice_constant.value())
-            for (auto& dislocation_position : dislocation_positions)
-                dislocation_position *= a;
-
-        std::vector<dealii::Tensor<1, 2>> burgers_vectors;
-        if (toml::array* array = tbl["burgers_vectors"].as_array())
-        {
-            burgers_vectors = toml::convert<std::vector<dealii::Tensor<1, 2>>>(*array);
-        }
-        else
-        {
-            throw std::invalid_argument("Incorrect input for burgers vectors");
-        }
-
-        if (scale_by_lattice_constant.value())
-            for (auto& burgers_vector : burgers_vectors)
-                burgers_vector *= a;
-    }
-    catch (const toml::parse_error& err)
-    {
-        std::cerr << "Parsing failed:\n" << err << "\n";
-        return 1;
-    }
+// 
+//         const auto dim = tbl["dim"].value<int>();
+//         const auto degree = tbl["degree"].value<unsigned int>();
+// 
+//         const auto eps = tbl["eps"].value<double>();
+// 
+//         const auto dt = tbl["dt"].value<double>();
+//         const auto theta = tbl["theta"].value<double>();
+//         const auto simulation_tol = tbl["simulation_tol"].value<double>();
+//         const auto simulation_max_iters = tbl["simulation_max_iters"].value<unsigned int>();
+// 
+//         const auto n_refines = tbl["n_refines"].value<unsigned int>();
+// 
+//         if (!dim) throw std::invalid_argument("No dim in parameter file");
+//         if (!degree) throw std::invalid_argument("No degree in parameter file");
+//         if (!eps) throw std::invalid_argument("No eps in parameter file");
+//         if (!dt) throw std::invalid_argument("No dt in parameter file");
+//         if (!theta) throw std::invalid_argument("No theta in parameter file");
+//         if (!simulation_tol) throw std::invalid_argument("No simulation_tol in parameter file");
+//         if (!simulation_max_iters) throw std::invalid_argument("No simulation_max_iters in parameter file");
+//         if (!n_refines) throw std::invalid_argument("No n_refines in parameter file");
+// 
+//         dealii::Point<2> p1;
+//         if (toml::array* p1_array = tbl["p1"].as_array())
+//         {
+//             p1 = toml::convert<dealii::Point<2>>(*p1_array);
+//         }
+//         else 
+//         {
+//             throw std::invalid_argument("p1 is not an array!");
+//         }
+// 
+//         dealii::Point<2> p2;
+//         if (toml::array* p2_array = tbl["p2"].as_array())
+//         {
+//             p2 = toml::convert<dealii::Point<2>>(*p2_array);
+//         }
+//         else 
+//         {
+//             throw std::invalid_argument("p1 is not an array!");
+//         }
+// 
+//         const auto scale_by_lattice_constant = tbl["scale_by_lattice_constant"].value<bool>();
+// 
+//         const double a = 4 * M_PI / std::sqrt(3);
+//         if (scale_by_lattice_constant.value())
+//         {
+//             p1 *= a;
+//             p2 *= a;
+//         }
+// 
+//         const auto psi_0 = tbl["psi_0"].value<double>();
+//         double A_0 = 0;
+//         if (tbl["A_0"].is_number())
+//             A_0 = tbl["A_0"].value<double>().value();
+//         else if (tbl["A_0"].is_string() 
+//                  && tbl["A_0"].value<std::string>().value() == "default")
+//             A_0 = 0.2 * (std::abs(*psi_0)
+//                     + (1.0 / 3.0) * std::sqrt(-15 * *eps - 36 * (*psi_0) * (*psi_0)));
+//         else
+//             throw std::invalid_argument("Incorrect input for A_0");
+// 
+//         std::vector<dealii::Tensor<1, 2>> dislocation_positions;
+//         if (toml::array* dislocation_positions_array = tbl["dislocation_positions"].as_array())
+//         {
+//             dislocation_positions = toml::convert<std::vector<dealii::Tensor<1, 2>>>(*dislocation_positions_array);
+//         }
+//         else
+//         {
+//             throw std::invalid_argument("Incorrect input for dislocation positions");
+//         }
+// 
+//         if (scale_by_lattice_constant.value())
+//             for (auto& dislocation_position : dislocation_positions)
+//                 dislocation_position *= a;
+// 
+//         std::vector<dealii::Tensor<1, 2>> burgers_vectors;
+//         if (toml::array* array = tbl["burgers_vectors"].as_array())
+//         {
+//             burgers_vectors = toml::convert<std::vector<dealii::Tensor<1, 2>>>(*array);
+//         }
+//         else
+//         {
+//             throw std::invalid_argument("Incorrect input for burgers vectors");
+//         }
+// 
+//         if (scale_by_lattice_constant.value())
+//             for (auto& burgers_vector : burgers_vectors)
+//                 burgers_vector *= a;
+     }
+     catch (const toml::parse_error& err)
+     {
+         std::cerr << "Parsing failed:\n" << err << "\n";
+         return 1;
+     }
 
     return 0;
 }
