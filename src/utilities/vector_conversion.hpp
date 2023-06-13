@@ -10,6 +10,9 @@ namespace vector_conversion
 template <typename T>
 T convert(const std::vector<double>& vec);
 
+template <typename T, typename S>
+T convert(const S& vec);
+
 }
 
 #endif

@@ -24,16 +24,15 @@ int main(int argc, char** argv)
         std::cout << p1 << "\n";
 
         auto dislocation_positions 
-            = toml::convert<std::vector<std::vector<double>>>(
-                    *tbl["dislocation_positions"].as_array()
-                    );
+            = vector_conversion::convert<std::vector<dealii::Tensor<1, 2>>>(
+                    toml::convert<std::vector<std::vector<double>>>(
+                        *tbl["dislocation_positions"].as_array()
+                    )
+                );
 
         for (const auto& position : dislocation_positions)
         {
-            for (auto num : position)
-                std::cout << num << " ";
-
-            std::cout << "\n";
+            std::cout << position << "\n";
         }
 
 
