@@ -3,6 +3,7 @@
 #include <deal.II/base/point.h>
 
 #include "parameters/toml.hpp"
+#include "utilities/vector_conversion.hpp"
 
 void print_double(double num)
 {
@@ -16,10 +17,11 @@ int main(int argc, char** argv)
     {
         tbl = toml::parse_file(argv[1]);
         // std::cout << tbl << "\n";
-        auto p1 = toml::convert<std::vector<double>>(*tbl["p1"].as_array());
+        auto p1 = vector_conversion::convert<dealii::Point<2>>( 
+                toml::convert<std::vector<double>>(*tbl["p1"].as_array())
+                );
 
-        for (const auto p : p1)
-            std::cout << p << "\n";
+        std::cout << p1 << "\n";
 
         auto dislocation_positions 
             = toml::convert<std::vector<std::vector<double>>>(
