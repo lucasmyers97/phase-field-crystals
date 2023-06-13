@@ -21,7 +21,7 @@ simulation_max_iters = 200
 n_refines = 6
 
 p1 = [-6.0, -5.0]
-p2 = [6, 5]
+p2 = [6.0, 5.0]
 scale_by_lattice_constant = true
 
 # initial values
@@ -29,7 +29,7 @@ psi_0 = -0.43
 A_0 = "default"
 
 # dislocation_positions = []
-burgers_vectors = []
+# burgers_vectors = []
 
 dislocation_positions = [[2.0, 0.0], [-2.0, 0.0]]
-# burgers_vectors = [[1, 0], [-1, 0]]
+burgers_vectors = [[1.0, 0.0], [-1.0, 0.0]]

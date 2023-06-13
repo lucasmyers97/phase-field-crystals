@@ -42,21 +42,6 @@ dealii::Point<3> convert(const std::vector<double>& vec)
 
 
 
-template <typename T, typename S>
-T convert(const S& vec)
-{
-    T return_vec;
-    return_vec.reserve(vec.size());
-
-    for (const auto& item : vec)
-        return_vec.push_back( convert<typename T::value_type>(item) );
-
-    return return_vec;
-}
-
-
-
-
 template <>
 dealii::Tensor<1, 1> convert(const std::vector<double>& vec)
 {
@@ -101,6 +86,20 @@ dealii::Tensor<1, 3> convert(const std::vector<double>& vec)
     t[2] = vec[2];
 
     return t;
+}
+
+
+
+template <typename T, typename S>
+T convert(const S& vec)
+{
+    T return_vec;
+    return_vec.reserve(vec.size());
+
+    for (const auto& item : vec)
+        return_vec.push_back( convert<typename T::value_type>(item) );
+
+    return return_vec;
 }
 
 
