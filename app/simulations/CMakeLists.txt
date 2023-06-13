@@ -7,14 +7,15 @@ target_link_libraries(phase_field_crystal_simulation
     PhaseFieldFunctions
     )
 
-# add_executable(phase_field_crystal_simulation_mpi
-#     phase_field_crystal_simulation_mpi.cpp
-#     )
-# target_link_libraries(phase_field_crystal_simulation_mpi
-#     PRIVATE
-#     PhaseFieldCrystalSystemMPI
-#     toml
-#     )
+add_executable(phase_field_crystal_simulation_mpi
+    phase_field_crystal_simulation_mpi.cpp
+    )
+target_link_libraries(phase_field_crystal_simulation_mpi
+    PRIVATE
+    PhaseFieldCrystalSystemMPI
+    toml
+    VectorConversion
+    )
 
 install(TARGETS phase_field_crystal_simulation DESTINATION bin)
 # install(TARGETS phase_field_crystal_simulation_mpi DESTINATION bin)
