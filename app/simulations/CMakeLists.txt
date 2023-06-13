@@ -14,7 +14,8 @@ target_link_libraries(phase_field_crystal_simulation_mpi
     PRIVATE
     PhaseFieldCrystalSystemMPI
     toml
+    VectorConversion
     )
 
 install(TARGETS phase_field_crystal_simulation DESTINATION bin)
-install(TARGETS phase_field_crystal_simulation_mpi DESTINATION bin)
+# install(TARGETS phase_field_crystal_simulation_mpi DESTINATION bin)

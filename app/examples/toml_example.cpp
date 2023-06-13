@@ -1,8 +1,11 @@
 #include <iostream>
+#include <vector>
 
 #include <deal.II/base/point.h>
+#include <deal.II/base/tensor.h>
 
 #include "parameters/toml.hpp"
+#include "utilities/vector_conversion.hpp"
 
 void print_double(double num)
 {
@@ -15,7 +18,6 @@ int main(int argc, char** argv)
     try
     {
         tbl = toml::parse_file(argv[1]);
-        std::cout << tbl << "\n";
 
         const auto dim = tbl["dim"].value<int>();
         const auto degree = tbl["degree"].value<unsigned int>();
@@ -41,7 +43,9 @@ int main(int argc, char** argv)
         dealii::Point<2> p1;
         if (toml::array* p1_array = tbl["p1"].as_array())
         {
-            p1 = toml::convert<dealii::Point<2>>(*p1_array);
+            p1 = vector_conversion::convert<dealii::Point<2>>( 
+                    toml::convert<std::vector<double>>(*p1_array)
+                    );
         }
         else 
         {
@@ -51,7 +55,9 @@ int main(int argc, char** argv)
         dealii::Point<2> p2;
         if (toml::array* p2_array = tbl["p2"].as_array())
         {
-            p2 = toml::convert<dealii::Point<2>>(*p2_array);
+            p2 = vector_conversion::convert<dealii::Point<2>>( 
+                    toml::convert<std::vector<double>>(*p2_array)
+                    );
         }
         else 
         {
@@ -81,7 +87,12 @@ int main(int argc, char** argv)
         std::vector<dealii::Tensor<1, 2>> dislocation_positions;
         if (toml::array* dislocation_positions_array = tbl["dislocation_positions"].as_array())
         {
-            dislocation_positions = toml::convert<std::vector<dealii::Tensor<1, 2>>>(*dislocation_positions_array);
+            dislocation_positions 
+                = vector_conversion::convert<std::vector<dealii::Tensor<1, 2>>>(
+                        toml::convert<std::vector<std::vector<double>>>(
+                            *dislocation_positions_array
+                        )
+                    );
         }
         else
         {
@@ -95,7 +106,12 @@ int main(int argc, char** argv)
         std::vector<dealii::Tensor<1, 2>> burgers_vectors;
         if (toml::array* array = tbl["burgers_vectors"].as_array())
         {
-            burgers_vectors = toml::convert<std::vector<dealii::Tensor<1, 2>>>(*array);
+            burgers_vectors 
+                = vector_conversion::convert<std::vector<dealii::Tensor<1, 2>>>(
+                        toml::convert<std::vector<std::vector<double>>>(
+                            *array
+                        )
+                    );
         }
         else
         {
@@ -105,12 +121,21 @@ int main(int argc, char** argv)
         if (scale_by_lattice_constant.value())
             for (auto& burgers_vector : burgers_vectors)
                 burgers_vector *= a;
-    }
-    catch (const toml::parse_error& err)
-    {
-        std::cerr << "Parsing failed:\n" << err << "\n";
-        return 1;
-    }
+
+        std::cout << p1 << "\n";
+        std::cout << p2 << "\n";
+
+        for (const auto& burgers_vector : burgers_vectors)
+            std::cout << burgers_vector << "\n";
+
+        for (const auto& dislocation_position : dislocation_positions)
+            std::cout << dislocation_position << "\n";
+     }
+     catch (const toml::parse_error& err)
+     {
+         std::cerr << "Parsing failed:\n" << err << "\n";
+         return 1;
+     }
 
     return 0;
 }

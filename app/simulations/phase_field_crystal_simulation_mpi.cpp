@@ -8,6 +8,7 @@
 
 #include "phase_field_functions/hexagonal_lattice.hpp"
 #include "phase_field_crystal_systems/phase_field_crystal_system_mpi.hpp"
+#include "utilities/vector_conversion.hpp"
 #include "parameters/toml.hpp"
 
 template <int dim>
@@ -53,13 +54,17 @@ parse_simulation_parameters(const toml::table& tbl)
     // grid parameters
     dealii::Point<dim> p1;
     if (const toml::array* p1_array = tbl["p1"].as_array())
-        p1 = toml::convert<dealii::Point<dim>>(*p1_array);
+        p1 = vector_conversion::convert<dealii::Point<dim>>(
+                toml::convert<std::vector<double>>(*p1_array)
+                );
     else 
         throw std::invalid_argument("p1 is not an array!");
 
     dealii::Point<dim> p2;
     if (const toml::array* p2_array = tbl["p2"].as_array())
-        p2 = toml::convert<dealii::Point<dim>>(*p2_array);
+        p2 = vector_conversion::convert<dealii::Point<dim>>(
+                toml::convert<std::vector<double>>(*p2_array)
+                );
     else 
         throw std::invalid_argument("p1 is not an array!");
 
@@ -86,7 +91,9 @@ parse_simulation_parameters(const toml::table& tbl)
 
     std::vector<dealii::Tensor<1, dim>> dislocation_positions;
     if (const toml::array* array = tbl["dislocation_positions"].as_array())
-        dislocation_positions = toml::convert<std::vector<dealii::Tensor<1, dim>>>(*array);
+        dislocation_positions = vector_conversion::convert<std::vector<dealii::Tensor<1, dim>>>(
+                toml::convert<std::vector<std::vector<double>>>(*array)
+                );
     else
         throw std::invalid_argument("Incorrect input for dislocation positions");
 
@@ -96,7 +103,9 @@ parse_simulation_parameters(const toml::table& tbl)
 
     std::vector<dealii::Tensor<1, dim>> burgers_vectors;
     if (const toml::array* array = tbl["burgers_vectors"].as_array())
-        burgers_vectors = toml::convert<std::vector<dealii::Tensor<1, dim>>>(*array);
+        burgers_vectors = vector_conversion::convert<std::vector<dealii::Tensor<1, dim>>>(
+                toml::convert<std::vector<std::vector<double>>>(*array)
+                );
     else
         throw std::invalid_argument("Incorrect input for burgers vectors");
 
