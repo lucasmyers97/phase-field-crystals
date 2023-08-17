@@ -33,41 +33,55 @@ author: "Lucas Myers"
 
 ## Implementation
 
-- At each locally-owned cell, we must traverse neighbors (and neighbors-of-neighbors, etc.) until `is_in_neighorhood` returns false.
-    - We assume that the neighborhood is connected to the original cell.
-    - Each cell in the neighborhood should be passed `calculate_local_quantity`, it should evaluate this function, and then it should return `local_quantity`.
+1. Prepare functions for Consensus Algorithm.
+    - Find all cells on current subdomain which have at least one quadrature point whose neighborhood intersects other bounding boxes.
+        - For this, keep `std::map<subdomain_id_type, std::map<cell, quad_points>>` structure around, where `quad_points = std::vector<dealii::Point<dim>>`.
+            - This assigns to each external subdomain which this subdomain may bump into (i.e. cells have quadrature points whose neighborhoods intersect their bounding boxes) a `std::map<cell, quad_points>>`.
+            - The `std::map<cell, quad_points>` will be sent over to other domains.
+            It keeps track of all the cells which intersect a given subdomain (from a particular other subdomain), and holds the list of quadrature points on that cell.
+        - If the cell has an edge which is a periodic boundary, find which subdomains its periodic neighbor intersects.
+    
+    - Generate `create_request` function which queries a `std::map<subdomain_id_type, std::map<cell, quad_points>>` type using the inputted subdomain id (which I guess is just an `unsigned int`).
 
-- If the neighborhood runs up against a ghost cell, need to invoke the external process protocol
+    - Generate `answer_request`.
+        - This function loops through all boundary cells, and loops through each element of `std::map<cell, quad_points>` to see whether it intersects with a quadrature point's neighborhood.
+        - If it does, it calculates the local quantity on that cell and then also goes to its neighbor cells until it collects all local quantities which are within the base cell's neighborhood.
+        - The answer that is generated is a `std::map<cell, local_quantities>` where `local_quantities = std::vector<local_quantity>` with each entry corresponding to each quadrature point.
 
-- If the neighborhood runs up against a periodic boundary, need to traverse neighbors of periodic neighbor cell.
-Invoke external process protocol if any cell one runs into is a ghost cell.
+    - Generate `process_answer`.
+        - This loops through all cells in `std::map<cell, local_quantities>`, and calls the user-provided function which processes those local quantities.
 
-### External process send protocol
+2. Call whichever Consensus Algorithm (we have all the pieces, just do it).
 
-- Check all bounding boxes and enumerate which mpi subdomains this particular cell intersects.
-- For each mpi subdomain which the local subdomain needs to contact, create a package with all the relevant information (presumably `is_in_neighborhood` and `calculate_local_quantity` functions).
-- Use `dealii::Utilities::MPI::ConsensusAlgorithms` to send the packages to the appropriate places.
-
-### External process receive protocol
-
-- Iterate through all boundary cells (iterate through all cells and just skip cells not on the boundary).
-    - Go through all packages received and, if the current cell is in neighborhood of the package, carry out the local process on all locally-owned cells within the package neighborhood and take the package out of the set of packages (it will have been dealt with).
-        - Note that cells from other subdomains will be covered because the packages will have intersected their bounding boxes as well.
-    - If the current cell is not in the neighborhood of any of the packages, just continue.
-
-- For each package, must keep track of who sent it, and then send back the `local_quantity` to the sender. 
-
-### Consensus algorithm objects
-
-- `RequestType`: this must contain all of the information that could be sent to another process.
-    - More specifically, it should be a `std::map` whose keys are pairs of cell iterators and dof_indices, and whose values are pairs of `is_in_neighborhood` and `calculate_local_quantity`.
-        - The reason for this is that each local integral must be associated with a particular dof on a particular cell so that the projection can be properly carried out.
-    - One of these should be put together for each subdomain whose bounding_box has been intersected -- this should probably be done with a `std::map` so we can add subdomains freely.
-    - `create_request` just queries the `std::map` for the `std::list`
-
-- `AnswerType`: 
+3. Do operations on owned subdomain.
+    - Loop through each base cell, and traverse all target cells intersected by a neighborhood of at least one quadrature cell.
+    - On each target cell, calculate local_quantity and then process it according to user-provided function.
 
 ## Building implementation
+
+1. Write initial `is_in_neighborhood` function.
+    - This will just take in a cell, and check whether any of the quadrature points in the cell are within the appropriate distance of the reference quadrature point.
+    - Test this with executable which takes in a point at the command-line, generates (coarse-ish) triangulation, sets up a finite element with dof-handler, then tests every single cell's quadrature points for inclusion in the neighborhood.
+    - Output vtu with "is_in_neighborhood" value.
+    - Output all quadrature points into csv.
+    - Can check by looking in paraview at vtu and also plotting quadrature points and circle centered at inputted point.
+
+2. Write initial `calculate_local_quantity` which just marks a cell as being in a particular subdomain.
+    - Can test this by just applying the function to one particular cell.
+
+3. Write function which goes to all neighbor cells, checking `is_in_neighborhood`, and then applying `calculate_local_quantity` if it is.
+    - Need to figure out how to measure distance from a periodic cell.
+    - Test by looking at vtu file again.
+
+4. Write function which checks whether point is in range of any of the bounding boxes. 
+    - Can check this by just creating a bounding box and seeing whether arbitrary points say their neighborhood intersects it.
+
+5. Write program which does the integral on a non-distributed Triangulation.
+    - This just loops through each quadrature point on each cell.
+    - For each quadrature point, it calculates $\sum_{q'} X^{(q')} \exp \left( - \left( \mathbf{r}^{(q)} - \mathbf{(q')} \right)^2 / 2 a_0^2 \right) \left( J \times W \right)^{(q')}$ within a radius of $a_0$ (or some multiple of that, whatever).
+    - It then takes that value to calculate $\left< \phi_i, \tilde{X} \right>$. 
+    - We may solve that with the mass matrix and solve to see if we get something that gets smoothed out. 
+    - Can try it with stress tensor to see whether we get something at defect points.
 
 ### Testing on a single-MPI process domain
 
