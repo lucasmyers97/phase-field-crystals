@@ -1,0 +1,67 @@
+\documentclass[reqno]{article}
+\usepackage{../format_doc}
+
+\begin{document}
+\title{Finite element local convolution integrals}
+\author{Lucas Myers}
+\maketitle
+
+\section{Convolution definition}
+
+In these kinds of problems where there's a long-wavelength distortion in an otherwise periodic field, we have the need to take an average over the system period.
+To do this in a smooth way, one may define the local averaging as:
+\begin{equation} \label{eq:convolution-integral}
+    \tilde{X} (\mathbf{r})
+    =
+    \int_\Omega d\mathbf{r}' \, 
+    \frac{X(\mathbf{r}')}{\left( 2 \pi a_0^2 \right)^{d/2}}
+    \exp\left( 
+        - \frac{ \left( \mathbf{r} - \mathbf{r}' \right)^2 }{2 a_0^2}
+    \right)
+\end{equation}
+where $\Omega$ is the domain, and $a_0$ is the lattice spacing.
+Typically the averaging is denoted by $\left< X \right>$, but we have use for the angle brackets when taking the inner product of functions.
+Note that, since the integrand decays exponentially away from $\mathbf{r}$, we may define some cutoff $\Lambda$ at which distance away from $\mathbf{r}$ we truncate the integral.
+Then this integral is done over a domain $C(\Lambda, \mathbf{r})$, a circle of radius $\Lambda$ centered at $\mathbf{r}$.
+
+Approximating the local average in terms of Lagrange elements $\phi$ yields:
+\begin{equation}
+    \tilde{X}
+    \approx
+    \sum_j \tilde{X}_j \phi_j
+\end{equation}
+Taking the inner product with other Lagrange elements $\phi_i$ yields:
+\begin{equation}
+    \sum_j \tilde{X}_j \left< \phi_i, \phi_j\right>
+    =
+    \left< \phi_i, \tilde{X}\right>
+\end{equation}
+where we are now taking this as the definition of $\tilde{X}_j$.
+We may easily solve this since $M_{ij} = \left< \phi_i, \phi_j \right>$ is symmetric and positive-definite.
+However, to implement this numerically we will need to query $\tilde{X}$ at every quadrature point, which corresponds to calculating \eqref{eq:convolution-integral} at every quadrature point.
+This is actually tractable by introducing a cutoff, but we still have to keep track of $\tilde{X}$ at every quadrature point.
+
+Explicitly the numerical computation of the right-hand side is given by:
+\begin{equation}
+    \begin{split}
+        \left< \phi_i, \tilde{X}\right>
+        &=
+        \sum_q \phi_i^{(q)} \tilde{X}^{(q)} \left( J \times W \right)^{(q)} \\
+        &=
+        \sum_q \phi_i^{(q)} 
+            \sum_{q'} \frac{1}{\left( 2 \pi a_0^2 \right)} X^{(q')} \exp \left( - \frac{(\mathbf{r}^{(q)} - \mathbf{r}^{(q')})^2}{2 a_0^2} \right) 
+            \left( J \times W \right)^{(q')} 
+        \left( J \times W \right)^{(q)}\\
+        &= 
+        \frac{1}{\left( 2 \pi a_0^2 \right)} 
+        \sum_{q'} \sum_q \phi_i^{(q)}
+            X^{(q')} \exp \left( - \frac{(\mathbf{r}^{(q)} - \mathbf{r}^{(q')})^2}{2 a_0^2} \right) 
+            \left( J \times W \right)^{(q')}
+        \left( J \times W \right)^{(q)}
+        \end{split}
+\end{equation}
+where here $q$ and $q'$ are indices of the two sets of quadrature points, a superscript of each of them corresponds to indexing by them, and $(J \times W)$ is the corresponding quadrature weight (scaled by the Jacobian from the unit cell).
+So then we must do one of two things in the multi-MPI process implementation: either we must send $\mathbf{r}^{(q)}$ to each process, calculate $\sum_q' X^{(q')} \exp\left( -(\mathbf{r}^{(q)} - \mathbf{r}^{(q')})^2 / 2 a_0^2 \right) (J \times W)^{(q')}$ on the other processes, then reassociate them with each quadrature point $q$ so that the $q$ summation can be carried out; or we may send over a set of $\phi_i^{(q)}$, $\mathbf{r}^{(q)}$, and $(J \times W)^{(q)}$, evaluate both sums on the external process, and then just reassociate with the local DoF $i$.
+I think it is probably easiest to do the former, and also it avoids having to send \verb|n_dofs| $\times$ \verb|n_quad_points| test functions.
+
+\end{document}
