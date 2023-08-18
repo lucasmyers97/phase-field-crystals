@@ -42,7 +42,7 @@ int main()
                                dealii::update_quadrature_points);
 
     std::ofstream output_file(quad_filename);
-    dealii::Vector<float> subdomain(tria.n_active_cells());
+    dealii::Vector<float> material_id(tria.n_active_cells());
     unsigned int i = 0;
     dealii::Point<dim> origin(0.5, 0.5);
     output_file << "x, y, z\n";
@@ -56,6 +56,14 @@ int main()
         
         return in_neighborhood;
     };
+
+    auto calculate_local_quantity = [](const typename dealii::DoFHandler<dim>::active_cell_iterator& cell) {
+        cell->set_material_id(1.0);
+    };
+    for (const auto& cell : dof_handler.active_cell_iterators())
+        if (is_in_neighborhood(cell))
+            calculate_local_quantity(cell);
+
     for (const auto& cell : dof_handler.active_cell_iterators())
     {
         fe_values.reinit(cell);   
@@ -65,14 +73,13 @@ int main()
         for (const auto& point : quad_points)
             output_file << point[0] << ", " << point[1] << ", 0\n";
 
-        // subdomain(i) = cell->center().distance(origin);
-        subdomain(i) = is_in_neighborhood(cell) ? 1.0 : 0;
+        material_id(i) = cell->material_id();
         ++i;
     }
 
     dealii::DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
-    data_out.add_data_vector(subdomain, "subdomain");
+    data_out.add_data_vector(material_id, "material_id");
     data_out.build_patches();
 
     std::ofstream output(output_filename);
