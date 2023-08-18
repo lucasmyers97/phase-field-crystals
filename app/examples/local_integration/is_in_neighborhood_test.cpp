@@ -23,6 +23,7 @@ constexpr unsigned int n_refines = 3;
 constexpr unsigned int degree = 1;
 const std::string quad_filename = "neighborhood_test.csv";
 const std::string output_filename = "neighborhood_test.vtu";
+const double radius = 0.2;
 
 int main()
 {
@@ -43,8 +44,18 @@ int main()
     std::ofstream output_file(quad_filename);
     dealii::Vector<float> subdomain(tria.n_active_cells());
     unsigned int i = 0;
-    dealii::Point<dim> origin;
+    dealii::Point<dim> origin(0.5, 0.5);
     output_file << "x, y, z\n";
+
+    auto is_in_neighborhood = [origin, &fe_values](const typename dealii::DoFHandler<dim>::active_cell_iterator& cell){
+        fe_values.reinit(cell);
+        const auto& quad_points = fe_values.get_quadrature_points();
+        bool in_neighborhood = false;
+        for (const auto& point : quad_points)
+            in_neighborhood = in_neighborhood || (origin.distance(point) < radius);
+        
+        return in_neighborhood;
+    };
     for (const auto& cell : dof_handler.active_cell_iterators())
     {
         fe_values.reinit(cell);   
@@ -54,7 +65,8 @@ int main()
         for (const auto& point : quad_points)
             output_file << point[0] << ", " << point[1] << ", 0\n";
 
-        subdomain(i) = cell->center().distance(origin);
+        // subdomain(i) = cell->center().distance(origin);
+        subdomain(i) = is_in_neighborhood(cell) ? 1.0 : 0;
         ++i;
     }
 
