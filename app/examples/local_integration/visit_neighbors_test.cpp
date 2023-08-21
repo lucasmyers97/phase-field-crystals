@@ -64,6 +64,8 @@ void visit_neighborhood(const cell_iterator& cell,
     }
 }
 
+
+
 int main()
 {
     dealii::Triangulation<dim> tria;

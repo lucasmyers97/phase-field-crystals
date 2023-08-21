@@ -78,7 +78,7 @@ author: "Lucas Myers"
 
 5. Write program which does the integral on a non-distributed Triangulation.
     - This just loops through each quadrature point on each cell.
-    - For each quadrature point, it calculates $\sum_{q'} X^{(q')} \exp \left( - \left( \mathbf{r}^{(q)} - \mathbf{(q')} \right)^2 / 2 a_0^2 \right) \left( J \times W \right)^{(q')}$ within a radius of $a_0$ (or some multiple of that, whatever).
+    - For each quadrature point, it calculates $\sum_{q'} X^{(q')} \exp \left( - \left( \mathbf{r}^{(q)} - \mathbf{r}^{(q')} \right)^2 / 2 a_0^2 \right) \left( J \times W \right)^{(q')}$ within a radius of $a_0$ (or some multiple of that, whatever).
     - It then takes that value to calculate $\left< \phi_i, \tilde{X} \right>$. 
     - We may solve that with the mass matrix and solve to see if we get something that gets smoothed out. 
     - Can try it with stress tensor to see whether we get something at defect points.
