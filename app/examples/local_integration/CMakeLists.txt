@@ -6,6 +6,7 @@ target_link_libraries(is_in_neighborhood_test
 add_executable(visit_neighbors_test visit_neighbors_test.cpp)
 target_link_libraries(visit_neighbors_test
     PRIVATE 
+    GridTools
     deal.II::Interface)
 
 install(TARGETS 

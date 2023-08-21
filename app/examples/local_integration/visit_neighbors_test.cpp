@@ -1,3 +1,5 @@
+#include "grid_tools/grid_tools.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -27,44 +29,6 @@ const std::string output_filename = "neighborhood_test.vtu";
 const double radius = 0.2;
 
 using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
-
-void visit_neighborhood(const cell_iterator& cell, 
-                        std::function<bool(const cell_iterator&)> &is_in_neighborhood,
-                        std::function<void(const cell_iterator&)> &calculate_local_quantity)
-{
-    calculate_local_quantity(cell);
-    cell->set_user_flag();
-
-    for (unsigned int i = 0; i < cell->n_faces(); ++i)
-    {
-        if (cell->at_boundary(i))
-            continue;
- 
-        const auto neighbor = cell->neighbor(i);
-        if (neighbor->has_children())
-            for (unsigned int j = 0; j < neighbor->n_children(); ++j)
-            {
-                const auto child = neighbor->child(j);
-                if (child->is_artificial() 
-                    || child->user_flag_set() 
-                    || !is_in_neighborhood(child))
-                    continue;
- 
-                visit_neighborhood(child, is_in_neighborhood, calculate_local_quantity);
-            }
-        else
-        {
-            if (neighbor->is_artificial() 
-                || neighbor->user_flag_set() 
-                || !is_in_neighborhood(neighbor))
-                continue;
- 
-            visit_neighborhood(neighbor, is_in_neighborhood, calculate_local_quantity);
-        }
-    }
-}
-
-
 
 int main()
 {
@@ -105,9 +69,11 @@ int main()
     };
     for (const auto& cell : dof_handler.active_cell_iterators())
         if (cell->point_inside(origin))
-            visit_neighborhood(cell,
-                               is_in_neighborhood,
-                               calculate_local_quantity);
+            grid_tools::visit_neighborhood(tria,
+                                           cell,
+                                           is_in_neighborhood,
+                                           calculate_local_quantity,
+                                           false);
 
     for (const auto& cell : dof_handler.active_cell_iterators())
     {
