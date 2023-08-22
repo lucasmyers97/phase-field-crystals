@@ -87,3 +87,9 @@ author: "Lucas Myers"
 ### Testing on a single-MPI process domain
 
 - 
+
+## Extras to add in later
+
+- [ ] Accommodate more matrix and vector types in convolution integrals
+- [ ] Accommodate more underlying types for vector convolution (e.g. Vectors & Tensors)
+- [ ] Have option to pass in `user_flags_eraser` which is just a function which is guaranteed to traverse the same path as the `is_in_neighborhood` function.
