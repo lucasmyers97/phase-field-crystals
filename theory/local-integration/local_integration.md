@@ -59,29 +59,30 @@ author: "Lucas Myers"
 
 ## Building implementation
 
-1. Write initial `is_in_neighborhood` function.
-    - This will just take in a cell, and check whether any of the quadrature points in the cell are within the appropriate distance of the reference quadrature point.
-    - Test this with executable which takes in a point at the command-line, generates (coarse-ish) triangulation, sets up a finite element with dof-handler, then tests every single cell's quadrature points for inclusion in the neighborhood.
-    - Output vtu with "is_in_neighborhood" value.
-    - Output all quadrature points into csv.
-    - Can check by looking in paraview at vtu and also plotting quadrature points and circle centered at inputted point.
+- [X] Write initial `is_in_neighborhood` function.
+    - [X] This will just take in a cell, and check whether any of the quadrature points in the cell are within the appropriate distance of the reference quadrature point.
+    - [X] Test this with executable which takes in a point at the command-line, generates (coarse-ish) triangulation, sets up a finite element with dof-handler, then tests every single cell's quadrature points for inclusion in the neighborhood.
+    - [X] Output vtu with "is_in_neighborhood" value.
+    - [X] Output all quadrature points into csv.
+    - [X] Can check by looking in paraview at vtu and also plotting quadrature points and circle centered at inputted point.
 
-2. Write initial `calculate_local_quantity` which just marks a cell as being in a particular subdomain.
-    - Can test this by just applying the function to one particular cell.
+- [X] Write initial `calculate_local_quantity` which just marks a cell as being in a particular subdomain.
+    - [X] Can test this by just applying the function to one particular cell.
 
-3. Write function which goes to all neighbor cells, checking `is_in_neighborhood`, and then applying `calculate_local_quantity` if it is.
-    - Need to figure out how to measure distance from a periodic cell.
-    - Test by looking at vtu file again.
+- [X] Write function which goes to all neighbor cells, checking `is_in_neighborhood`, and then applying `calculate_local_quantity` if it is.
+    - [ ] Need to figure out how to measure distance from a periodic cell.
+    - [X] Test by looking at vtu file again.
 
-4. Write function which checks whether point is in range of any of the bounding boxes. 
-    - Can check this by just creating a bounding box and seeing whether arbitrary points say their neighborhood intersects it.
+- [ ] Write function which checks whether point is in range of any of the bounding boxes. 
+    - [ ] Can check this by just creating a bounding box and seeing whether arbitrary points say their neighborhood intersects it.
 
-5. Write program which does the integral on a non-distributed Triangulation.
-    - This just loops through each quadrature point on each cell.
-    - For each quadrature point, it calculates $\sum_{q'} X^{(q')} \exp \left( - \left( \mathbf{r}^{(q)} - \mathbf{r}^{(q')} \right)^2 / 2 a_0^2 \right) \left( J \times W \right)^{(q')}$ within a radius of $a_0$ (or some multiple of that, whatever).
-    - It then takes that value to calculate $\left< \phi_i, \tilde{X} \right>$. 
-    - We may solve that with the mass matrix and solve to see if we get something that gets smoothed out. 
-    - Can try it with stress tensor to see whether we get something at defect points.
+- [ ] Write program which does the integral on a non-distributed Triangulation.
+    - [ ] This just loops through each quadrature point on each cell.
+    - [ ] For each quadrature point, it calculates $\sum_{q'} X^{(q')} \exp \left( - \left( \mathbf{r}^{(q)} - \mathbf{r}^{(q')} \right)^2 / 2 a_0^2 \right) \left( J \times W \right)^{(q')}$ within a radius of $a_0$ (or some multiple of that, whatever).
+    - [ ] It then takes that value to calculate $\left< \phi_i, \tilde{X} \right>$. 
+    - [ ] We may solve that with the mass matrix and solve to see if we get something that gets smoothed out. 
+    - [ ] First just try with Gaussian and use convolution theorem to check results with Python or something.
+    - [ ] Can try it with stress tensor to see whether we get something at defect points.
 
 ### Testing on a single-MPI process domain
 
