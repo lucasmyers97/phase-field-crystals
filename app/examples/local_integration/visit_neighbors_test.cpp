@@ -52,16 +52,18 @@ int main()
     dealii::Point<dim> origin(0.5, 0.5);
     output_file << "x, y, z\n";
 
-    std::function<bool(const cell_iterator& cell)> is_in_neighborhood 
-        = [origin, &fe_values](const cell_iterator& cell){
-        fe_values.reinit(cell);
-        const auto& quad_points = fe_values.get_quadrature_points();
-        bool in_neighborhood = false;
-        for (const auto& point : quad_points)
-            in_neighborhood = in_neighborhood || (origin.distance(point) < radius);
-        
-        return in_neighborhood;
-    };
+    // std::function<bool(const cell_iterator& cell)> is_in_neighborhood 
+    //     = [origin, &fe_values](const cell_iterator& cell){
+    //     fe_values.reinit(cell);
+    //     const auto& quad_points = fe_values.get_quadrature_points();
+    //     bool in_neighborhood = false;
+    //     for (const auto& point : quad_points)
+    //         in_neighborhood = in_neighborhood || (origin.distance(point) < radius);
+    //     
+    //     return in_neighborhood;
+    // };
+    std::function<bool(const cell_iterator& cell)> is_in_neighborhood
+        = grid_tools::neighborhood_functions::IsInL2Neighborhood<dim>(fe_values, origin, radius);
 
     std::function<void(const cell_iterator& cell)> calculate_local_quantity 
         = [](const cell_iterator& cell) {

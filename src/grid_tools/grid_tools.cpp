@@ -65,6 +65,35 @@ void visit_neighbors_recursively(const cell_iterator<dim>& cell,
     }
 }
 
+
+
+namespace neighborhood_functions {
+
+template <int dim>
+IsInL2Neighborhood<dim>::IsInL2Neighborhood(dealii::FEValues<dim>& fe_values,
+                                            const dealii::Point<dim>& base_point,
+                                            double radius)
+    : fe_values(fe_values)
+    , base_point(base_point)
+    , radius(radius)
+{}
+
+
+
+template<int dim>
+bool IsInL2Neighborhood<dim>::operator()(const cell_iterator<dim> &cell)
+{
+    fe_values.reinit(cell);
+    const auto& quad_points = fe_values.get_quadrature_points();
+    for (const auto& point : quad_points)
+        if (base_point.distance(point) < radius)
+            return true;
+    
+    return false;
+}
+
+}
+
 template
 void visit_neighborhood<2>(dealii::Triangulation<2> &tria, const cell_iterator<2> &base_cell, 
                            std::function<bool (const cell_iterator<2> &)> &is_in_neighborhood, 
@@ -76,5 +105,11 @@ void visit_neighborhood<3>(dealii::Triangulation<3> &tria, const cell_iterator<3
                            std::function<bool (const cell_iterator<3> &)> &is_in_neighborhood, 
                            std::function<void (const cell_iterator<3> &)> &calculate_local_quantity, 
                            bool clear_user_flags);
+
+template
+class neighborhood_functions::IsInL2Neighborhood<2>;
+
+template
+class neighborhood_functions::IsInL2Neighborhood<3>;
 
 } // grid_tools

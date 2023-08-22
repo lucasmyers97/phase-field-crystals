@@ -1,7 +1,9 @@
 #ifndef PHASE_FIELD_CRYSTALS_GRID_TOOLS_HPP
 #define PHASE_FIELD_CRYSTALS_GRID_TOOLS_HPP
 
+#include <deal.II/base/point.h>
 #include <deal.II/grid/tria.h>
+#include <deal.II/fe/fe_values.h>
 #include <deal.II/dofs/dof_handler.h>
 
 namespace grid_tools {
@@ -65,6 +67,25 @@ template <int dim>
 void visit_neighbors_recursively(const cell_iterator<dim>& cell, 
                                  std::function<bool(const cell_iterator<dim>&)> &is_in_neighborhood,
                                  std::function<void(const cell_iterator<dim>&)> &calculate_local_quantity);
+
+namespace neighborhood_functions {
+
+template <int dim>
+class IsInL2Neighborhood 
+{
+public:
+    IsInL2Neighborhood(dealii::FEValues<dim>& fe_values,
+                       const dealii::Point<dim>& base_point,
+                       double radius);
+    bool operator()(const cell_iterator<dim>& cell);
+
+private:
+    dealii::FEValues<dim> &fe_values;
+    const dealii::Point<dim> &base_point;
+    const double radius;
+};
+
+}
 
 } //grid_tools
 
