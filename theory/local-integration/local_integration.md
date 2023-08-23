@@ -84,6 +84,12 @@ author: "Lucas Myers"
     - [ ] First just try with Gaussian and use convolution theorem to check results with Python or something.
     - [ ] Can try it with stress tensor to see whether we get something at defect points.
 
+- [ ] Steps to non-distributed convolution
+    - [ ] Write convolution calculation at a point (test with something easily calculable like product of sines).
+    - [ ] Write convolution over entire domain which writes into RHS and mass matrix (can't test this right away).
+    - [ ] Write a small test program which does this for something easy like product of sines, and solves for finite element represenation.
+    (can test by just examining the vtu file, or just projecting the analytic result).
+
 ### Testing on a single-MPI process domain
 
 - 
