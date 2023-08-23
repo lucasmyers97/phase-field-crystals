@@ -6,7 +6,7 @@
 namespace grid_tools {
 
 template <int dim>
-using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
+using cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
 
 template <int dim>
 void visit_neighborhood(dealii::Triangulation<dim> & tria,

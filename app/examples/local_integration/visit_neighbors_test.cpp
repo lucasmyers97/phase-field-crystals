@@ -28,7 +28,7 @@ const std::string quad_filename = "neighborhood_test.csv";
 const std::string output_filename = "neighborhood_test.vtu";
 const double radius = 0.2;
 
-using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
+using cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
 
 int main()
 {
@@ -39,7 +39,6 @@ int main()
     dealii::FE_Q<dim> fe(degree);
     dealii::DoFHandler<dim> dof_handler(tria);
     dof_handler.distribute_dofs(fe);
-
 
     dealii::QGauss<dim> quadrature_formula(degree + 1);
     dealii::FEValues fe_values(fe,
@@ -52,16 +51,6 @@ int main()
     dealii::Point<dim> origin(0.5, 0.5);
     output_file << "x, y, z\n";
 
-    // std::function<bool(const cell_iterator& cell)> is_in_neighborhood 
-    //     = [origin, &fe_values](const cell_iterator& cell){
-    //     fe_values.reinit(cell);
-    //     const auto& quad_points = fe_values.get_quadrature_points();
-    //     bool in_neighborhood = false;
-    //     for (const auto& point : quad_points)
-    //         in_neighborhood = in_neighborhood || (origin.distance(point) < radius);
-    //     
-    //     return in_neighborhood;
-    // };
     std::function<bool(const cell_iterator& cell)> is_in_neighborhood
         = grid_tools::neighborhood_functions::IsInL2Neighborhood<dim>(fe_values, origin, radius);
 
@@ -69,7 +58,7 @@ int main()
         = [](const cell_iterator& cell) {
         cell->set_material_id(1.0);
     };
-    for (const auto& cell : dof_handler.active_cell_iterators())
+    for (const auto& cell : tria.active_cell_iterators())
         if (cell->point_inside(origin))
             grid_tools::visit_neighborhood(tria,
                                            cell,
@@ -77,7 +66,7 @@ int main()
                                            calculate_local_quantity,
                                            false);
 
-    for (const auto& cell : dof_handler.active_cell_iterators())
+    for (const auto& cell : tria.active_cell_iterators())
     {
         fe_values.reinit(cell);   
 
