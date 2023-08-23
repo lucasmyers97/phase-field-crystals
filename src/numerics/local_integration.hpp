@@ -14,6 +14,9 @@ namespace local_integration
 {
 
 template <int dim>
+using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
+
+template <int dim>
 using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
 
 template <int dim>
@@ -30,12 +33,22 @@ void gaussian_convolution(dealii::Triangulation<dim>& tria,
 
 template <int dim>
 double gaussian_convolution_on_neighborhood(dealii::Triangulation<dim>& tria,
-                                            const dealii::FiniteElement<dim> &fe,
+                                            const dealii::DoFHandler<dim>& dof_handler,
+                                            const dealii::FiniteElement<dim>& fe,
                                             const cell_iterator<dim>& base_cell, 
                                             const dealii::Point<dim>& base_point,
                                             double sigma,
                                             double integral_radius,
                                             const dealii::Vector<double> &fe_field);
+
+template <int dim, typename T, typename S, typename R>
+R local_convolution_at_point(dealii::Triangulation<dim> &tria,
+                             const dealii::DoFHandler<dim> &dof_handler,
+                             dealii::FEValues<dim> &fe_values,
+                             convolution_function<dim, T> &f,
+                             convolution_function<dim, S> &g,
+                             std::function<bool(tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                             tria_cell_iterator<dim>& base_cell);
 
 template <typename T, int dim>
 void locally_integrate(std::function<T (dealii::Point<dim>&)> &integrand,

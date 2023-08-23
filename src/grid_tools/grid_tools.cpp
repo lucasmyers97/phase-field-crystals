@@ -6,13 +6,13 @@
 namespace grid_tools {
 
 template <int dim>
-using cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
+using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
 
 template <int dim>
 void visit_neighborhood(dealii::Triangulation<dim> & tria,
-                        const cell_iterator<dim>& base_cell, 
-                        std::function<bool(const cell_iterator<dim>&)> &is_in_neighborhood,
-                        std::function<void(const cell_iterator<dim>&)> &calculate_local_quantity,
+                        const tria_cell_iterator<dim>& base_cell, 
+                        std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                        std::function<void(const tria_cell_iterator<dim>&)> &calculate_local_quantity,
                         bool clear_user_flags)
 {
     if (clear_user_flags)
@@ -29,9 +29,9 @@ void visit_neighborhood(dealii::Triangulation<dim> & tria,
 
 
 template <int dim>
-void visit_neighbors_recursively(const cell_iterator<dim>& cell, 
-                                 std::function<bool(const cell_iterator<dim>&)> &is_in_neighborhood,
-                                 std::function<void(const cell_iterator<dim>&)> &calculate_local_quantity)
+void visit_neighbors_recursively(const tria_cell_iterator<dim>& cell, 
+                                 std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                                 std::function<void(const tria_cell_iterator<dim>&)> &calculate_local_quantity)
 {
     calculate_local_quantity(cell);
     cell->set_user_flag();
@@ -81,7 +81,7 @@ IsInL2Neighborhood<dim>::IsInL2Neighborhood(dealii::FEValues<dim>& fe_values,
 
 
 template<int dim>
-bool IsInL2Neighborhood<dim>::operator()(const cell_iterator<dim> &cell)
+bool IsInL2Neighborhood<dim>::operator()(const tria_cell_iterator<dim> &cell)
 {
     fe_values.reinit(cell);
     const auto& quad_points = fe_values.get_quadrature_points();
@@ -95,15 +95,15 @@ bool IsInL2Neighborhood<dim>::operator()(const cell_iterator<dim> &cell)
 }
 
 template
-void visit_neighborhood<2>(dealii::Triangulation<2> &tria, const cell_iterator<2> &base_cell, 
-                           std::function<bool (const cell_iterator<2> &)> &is_in_neighborhood, 
-                           std::function<void (const cell_iterator<2> &)> &calculate_local_quantity, 
+void visit_neighborhood<2>(dealii::Triangulation<2> &tria, const tria_cell_iterator<2> &base_cell, 
+                           std::function<bool (const tria_cell_iterator<2> &)> &is_in_neighborhood, 
+                           std::function<void (const tria_cell_iterator<2> &)> &calculate_local_quantity, 
                            bool clear_user_flags);
 
 template
-void visit_neighborhood<3>(dealii::Triangulation<3> &tria, const cell_iterator<3> &base_cell, 
-                           std::function<bool (const cell_iterator<3> &)> &is_in_neighborhood, 
-                           std::function<void (const cell_iterator<3> &)> &calculate_local_quantity, 
+void visit_neighborhood<3>(dealii::Triangulation<3> &tria, const tria_cell_iterator<3> &base_cell, 
+                           std::function<bool (const tria_cell_iterator<3> &)> &is_in_neighborhood, 
+                           std::function<void (const tria_cell_iterator<3> &)> &calculate_local_quantity, 
                            bool clear_user_flags);
 
 template

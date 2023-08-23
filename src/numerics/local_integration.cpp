@@ -4,6 +4,7 @@
 
 #include <deal.II/base/point.h>
 #include <deal.II/base/quadrature_lib.h>
+#include <deal.II/grid/tria.h>
 #include <deal.II/lac/affine_constraints.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/fe/fe.h>
@@ -17,6 +18,9 @@
 
 namespace local_integration
 {
+
+template <int dim>
+using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
 
 template <int dim>
 using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
@@ -88,19 +92,25 @@ void gaussian_convolution(dealii::Triangulation<dim>& tria,
 
 template <int dim>
 double gaussian_convolution_on_neighborhood(dealii::Triangulation<dim>& tria,
-                                            const dealii::FEValues<dim> &fe_values,
+                                            const dealii::DoFHandler<dim>& dof_handler,
+                                            const dealii::FEValues<dim>& fe_values,
                                             const cell_iterator<dim>& base_cell, 
                                             const dealii::Point<dim>& base_point,
                                             double sigma,
                                             double integral_radius,
                                             const dealii::Vector<double> &fe_field)
 {
-    std::function<bool(const cell_iterator<dim>&)> is_in_neighborhood 
+    std::function<bool(const tria_cell_iterator<dim>&)> is_in_neighborhood 
         = grid_tools::neighborhood_functions::IsInL2Neighborhood<dim>(fe_values, base_point, integral_radius);
 
     double integral_result = 0;
-    std::function<void(const cell_iterator<dim>&)> calculate_cell_integral_contribution
-        = [&fe_field, &fe_values, &base_point, sigma, integral_radius, &integral_result](const cell_iterator<dim>& cell) {
+    std::function<void(const tria_cell_iterator<dim>&)> calculate_cell_integral_contribution
+        = [&fe_field, &fe_values, &dof_handler, &base_point, sigma, integral_radius, &integral_result]
+        (const tria_cell_iterator<dim>& tria_cell) {
+            cell_iterator<dim> cell(&tria_cell->get_triangulation(),
+                                    tria_cell->level(),
+                                    tria_cell->index(),
+                                    &dof_handler);
             fe_values.reinit(cell);
 
             const std::vector<dealii::Point<dim>> q_points = fe_values.get_quadrature_points();

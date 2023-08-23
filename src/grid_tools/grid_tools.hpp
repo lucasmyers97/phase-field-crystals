@@ -9,7 +9,7 @@
 namespace grid_tools {
    
 template <int dim>
-using cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
+using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
 
 /**
  * \brief Visits neighborhood of `base_cell` and calculates some quantity using
@@ -37,9 +37,9 @@ using cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
  */
 template <int dim>
 void visit_neighborhood(dealii::Triangulation<dim>& tria,
-                        const cell_iterator<dim>& base_cell, 
-                        std::function<bool(const cell_iterator<dim>&)> &is_in_neighborhood,
-                        std::function<void(const cell_iterator<dim>&)> &calculate_local_quantity,
+                        const tria_cell_iterator<dim>& base_cell, 
+                        std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                        std::function<void(const tria_cell_iterator<dim>&)> &calculate_local_quantity,
                         bool clear_user_flags=true);
 
 /**
@@ -64,9 +64,9 @@ void visit_neighborhood(dealii::Triangulation<dim>& tria,
  * upon evaluation.
  */
 template <int dim>
-void visit_neighbors_recursively(const cell_iterator<dim>& cell, 
-                                 std::function<bool(const cell_iterator<dim>&)> &is_in_neighborhood,
-                                 std::function<void(const cell_iterator<dim>&)> &calculate_local_quantity);
+void visit_neighbors_recursively(const tria_cell_iterator<dim>& cell, 
+                                 std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                                 std::function<void(const tria_cell_iterator<dim>&)> &calculate_local_quantity);
 
 namespace neighborhood_functions {
 
@@ -77,7 +77,7 @@ public:
     IsInL2Neighborhood(dealii::FEValues<dim>& fe_values,
                        const dealii::Point<dim>& base_point,
                        double radius);
-    bool operator()(const cell_iterator<dim>& cell);
+    bool operator()(const tria_cell_iterator<dim>& cell);
 
 private:
     dealii::FEValues<dim> &fe_values;
