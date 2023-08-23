@@ -88,6 +88,12 @@ author: "Lucas Myers"
 
 - 
 
+## Things to fix right now
+
+- [ ] Functions all take in a `DoFHandler<dim>::active_cell_iterator`. 
+It makes more sense for the lower-level functions to take in a `Triangulation<dim>::active_cell_iterator` to be more general.
+Those can be converted into the corresponding `DoFHandler<dim>::active_cell_iterator` by the user if need be.
+
 ## Extras to add in later
 
 - [ ] Accommodate more matrix and vector types in convolution integrals
