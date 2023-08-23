@@ -19,6 +19,9 @@ using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iter
 template <int dim>
 using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
 
+template <int dim, typename T>
+using convolution_function = std::function<std::vector<T>(const tria_cell_iterator<dim> &)>;
+
 template <int dim>
 void gaussian_convolution(dealii::Triangulation<dim>& tria,
                           const dealii::DoFHandler<dim>& dof_handler,

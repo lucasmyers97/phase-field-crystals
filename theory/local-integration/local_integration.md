@@ -94,6 +94,11 @@ author: "Lucas Myers"
 It makes more sense for the lower-level functions to take in a `Triangulation<dim>::active_cell_iterator` to be more general.
 Those can be converted into the corresponding `DoFHandler<dim>::active_cell_iterator` by the user if need be.
 
+- [ ] Should make this a general convolution for two functions, $f$ and $g$.
+    - [ ] To calculate the convolution at a point, we need:
+        - Both functions' values at the quadrature points
+        - Jacobian transformation at quadrature points.
+
 ## Extras to add in later
 
 - [ ] Accommodate more matrix and vector types in convolution integrals

@@ -25,6 +25,9 @@ using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iter
 template <int dim>
 using cell_iterator = typename dealii::DoFHandler<dim>::active_cell_iterator;
 
+template <int dim, typename T>
+using convolution_function = std::function<std::vector<T>(const tria_cell_iterator<dim>&)>;
+
 template <int dim>
 void gaussian_convolution(dealii::Triangulation<dim>& tria,
                           const dealii::DoFHandler<dim>& dof_handler,
@@ -134,6 +137,45 @@ double gaussian_convolution_on_neighborhood(dealii::Triangulation<dim>& tria,
 
 
 
+template <int dim, typename T, typename S, typename R>
+R local_convolution_at_point(dealii::Triangulation<dim> &tria,
+                             const dealii::DoFHandler<dim> &dof_handler,
+                             dealii::FEValues<dim> &fe_values,
+                             convolution_function<dim, T> &f,
+                             convolution_function<dim, S> &g,
+                             std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                             tria_cell_iterator<dim>& base_cell)
+{
+    R integral_result = 0;
+    std::function<void(const tria_cell_iterator<dim>&)> calculate_cell_integral_contribution
+        = [&dof_handler, &fe_values, &f, &g, &integral_result]
+        (const tria_cell_iterator<dim>& tria_cell) {
+            cell_iterator<dim> cell(&tria_cell->get_triangulation(),
+                                    tria_cell->level(),
+                                    tria_cell->index(),
+                                    &dof_handler);
+            fe_values.reinit(cell);
+
+            std::vector<T> f_vals = f(tria_cell);
+            std::vector<R> g_vals = g(tria_cell);
+            for (const unsigned int q : fe_values.quadrature_point_indices())
+            {
+                integral_result += f_vals[q]
+                                   * g_vals[q]
+                                   * fe_values.JxW(q);
+            }
+        };
+
+    grid_tools::visit_neighborhood<dim>(tria, 
+                                        base_cell, 
+                                        is_in_neighborhood,
+                                        calculate_cell_integral_contribution);
+
+    return integral_result;
+}
+
+
+
 template <typename T, int dim>
 void locally_integrate(std::function<T (dealii::Point<dim>&)> &integrand,
                     const dealii::DoFHandler<dim> &dof_handler,
@@ -208,6 +250,16 @@ find_cells_in_distance(const dealii::DoFHandler<dim> &dof_handler,
 
     return cell_list;
 }
+
+template
+double local_convolution_at_point<2, double, double, double>(
+        dealii::Triangulation<2> &tria,
+        const dealii::DoFHandler<2> &dof_handler,
+        dealii::FEValues<2> &fe_values,
+        convolution_function<2, double> &f,
+        convolution_function<2, double> &g,
+        std::function<bool(const tria_cell_iterator<2>&)> &is_in_neighborhood,
+        tria_cell_iterator<2>& base_cell);
 
 template
 std::vector<typename dealii::DoFHandler<2>::cell_iterator>
