@@ -110,3 +110,9 @@ Those can be converted into the corresponding `DoFHandler<dim>::active_cell_iter
 - [ ] Accommodate more matrix and vector types in convolution integrals
 - [ ] Accommodate more underlying types for vector convolution (e.g. Vectors & Tensors)
 - [ ] Have option to pass in `user_flags_eraser` which is just a function which is guaranteed to traverse the same path as the `is_in_neighborhood` function.
+
+## New thoughts after coming back
+
+- [ ] Test convolution at point function
+- [ ] Need to think about whether to template with a universal reference or not
+    - See the Scott Myers book about this

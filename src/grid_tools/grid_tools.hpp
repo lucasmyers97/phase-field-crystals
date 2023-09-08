@@ -35,11 +35,11 @@ using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iter
  * Users may construct `calculate_local_quantity` to change its internal state 
  * upon evaluation.
  */
-template <int dim>
+template <int dim, typename F, typename G>
 void visit_neighborhood(dealii::Triangulation<dim>& tria,
                         const tria_cell_iterator<dim>& base_cell, 
-                        std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
-                        std::function<void(const tria_cell_iterator<dim>&)> &calculate_local_quantity,
+                        F &is_in_neighborhood,
+                        G &calculate_local_quantity,
                         bool clear_user_flags=true);
 
 /**
@@ -63,10 +63,10 @@ void visit_neighborhood(dealii::Triangulation<dim>& tria,
  * Users may construct `calculate_local_quantity` to change its internal state 
  * upon evaluation.
  */
-template <int dim>
+template <int dim, typename F, typename G>
 void visit_neighbors_recursively(const tria_cell_iterator<dim>& cell, 
-                                 std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
-                                 std::function<void(const tria_cell_iterator<dim>&)> &calculate_local_quantity);
+                                 F &is_in_neighborhood,
+                                 G &calculate_local_quantity);
 
 namespace neighborhood_functions {
 
@@ -85,6 +85,63 @@ private:
     const double radius;
 };
 
+}
+
+template <int dim, typename F, typename G>
+void visit_neighborhood(dealii::Triangulation<dim> & tria,
+                        const tria_cell_iterator<dim>& base_cell, 
+                        F &is_in_neighborhood,
+                        G &calculate_local_quantity,
+                        bool clear_user_flags)
+{
+    if (clear_user_flags)
+        tria.clear_user_flags();
+
+    visit_neighbors_recursively<dim>(base_cell, 
+                                     is_in_neighborhood, 
+                                     calculate_local_quantity);
+
+    if (clear_user_flags)
+        tria.clear_user_flags();
+}
+
+
+
+template <int dim, typename F, typename G>
+void visit_neighbors_recursively(const tria_cell_iterator<dim>& cell, 
+                                 F &is_in_neighborhood,
+                                 G &calculate_local_quantity)
+{
+    calculate_local_quantity(cell);
+    cell->set_user_flag();
+
+    for (unsigned int i = 0; i < cell->n_faces(); ++i)
+    {
+        if (cell->at_boundary(i))
+            continue;
+ 
+        const auto neighbor = cell->neighbor(i);
+        if (neighbor->has_children())
+            for (unsigned int j = 0; j < neighbor->n_children(); ++j)
+            {
+                const auto child = neighbor->child(j);
+                if (child->is_artificial() 
+                    || child->user_flag_set() 
+                    || !is_in_neighborhood(child))
+                    continue;
+ 
+                visit_neighbors_recursively<dim>(child, is_in_neighborhood, calculate_local_quantity);
+            }
+        else
+        {
+            if (neighbor->is_artificial() 
+                || neighbor->user_flag_set() 
+                || !is_in_neighborhood(neighbor))
+                continue;
+ 
+            visit_neighbors_recursively<dim>(neighbor, is_in_neighborhood, calculate_local_quantity);
+        }
+    }
 }
 
 } //grid_tools

@@ -10,6 +10,8 @@
 
 #include <functional>
 
+#include "grid_tools/grid_tools.hpp"
+
 namespace local_integration
 {
 
@@ -68,6 +70,45 @@ find_cells_in_distance(const dealii::DoFHandler<dim> &dof_handler,
                        const typename dealii::DoFHandler<dim>::cell_iterator cell,
                        const dealii::Point<dim> &center,
                        double radius);
+
+
+
+template <int dim, typename T, typename S, typename R, typename F, typename G>
+R local_convolution_at_point(dealii::Triangulation<dim> &tria,
+                             const dealii::DoFHandler<dim> &dof_handler,
+                             dealii::FEValues<dim> &fe_values,
+                             F &f,
+                             G &g,
+                             std::function<bool(const tria_cell_iterator<dim>&)> &is_in_neighborhood,
+                             tria_cell_iterator<dim>& base_cell)
+{
+    R integral_result = 0;
+    std::function<void(const tria_cell_iterator<dim>&)> calculate_cell_integral_contribution
+        = [&dof_handler, &fe_values, &f, &g, &integral_result]
+        (const tria_cell_iterator<dim>& tria_cell) {
+            cell_iterator<dim> cell(&tria_cell->get_triangulation(),
+                                    tria_cell->level(),
+                                    tria_cell->index(),
+                                    &dof_handler);
+            fe_values.reinit(cell);
+
+            std::vector<T> f_vals = f(tria_cell);
+            std::vector<R> g_vals = g(tria_cell);
+            for (const unsigned int q : fe_values.quadrature_point_indices())
+            {
+                integral_result += f_vals[q]
+                                   * g_vals[q]
+                                   * fe_values.JxW(q);
+            }
+        };
+
+    grid_tools::visit_neighborhood<dim>(tria, 
+                                        base_cell, 
+                                        is_in_neighborhood,
+                                        calculate_cell_integral_contribution);
+
+    return integral_result;
+}
 
 } // local_integration
 
