@@ -1,1 +1,16 @@
+# All folders which are not documentation
 ZhifeiYang/**
+.cache
+
+build
+install
+docs
+
+theory
+tomlplusplus
+
+temp-data
+forward-euler-data
+
+compile_commands.json
+*.vtu
