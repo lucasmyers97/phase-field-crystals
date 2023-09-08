@@ -1,0 +1,28 @@
+# this is a config file for Poxy - a Doxygen + m.css front-end written in Python.
+# https://github.com/marzer/poxy
+#
+# config reference: https://github.com/marzer/poxy/wiki/Configuration-options
+
+name            = 'phase-field-crystals'
+author          = 'Lucas Myers'
+description     = 'Finite element phase-field crystal solver'
+cpp             = 17
+github          = 'lucasmyers97/phase-field-crystals'
+license         = [ 'MIT', 'https://github.com/lucasmyers97/phase-field-crystals/blob/main/README.md' ]
+show_includes   = false
+changelog       = true
+navbar          = [ 'namespaces', 'annotated' ]
+theme           = 'dark'
+
+
+
+[warnings]
+enabled         = true
+treat_as_errors = false
+undocumented    = true
+
+
+
+[sources]
+recursive_paths = [ '../src' ]
+patterns        = [ '*.h', '*.hpp', '*.dox', '*.md' ]
