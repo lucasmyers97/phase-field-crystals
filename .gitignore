@@ -5,6 +5,7 @@ install/**
 .cache/**
 **/.ipynb_checkpoints
 docs/html
+docs/m.math.cache
 
 # latex build files
 *.aux
