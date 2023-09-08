@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<tagfile>
+  <compound kind="namespace">
+    <name>grid_tools</name>
+    <filename>namespacegrid__tools.html</filename>
+    <member kind="typedef">
+      <type>typename dealii::Triangulation&lt; dim &gt;::active_cell_iterator</type>
+      <name>tria_cell_iterator</name>
+      <anchorfile>namespacegrid__tools.html</anchorfile>
+      <anchor>a0d835cd04b01f5b57cc2aa89b3096028</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>visit_neighborhood</name>
+      <anchorfile>namespacegrid__tools.html</anchorfile>
+      <anchor>a63238f5edcc81ca37cad3477e6a078b9</anchor>
+      <arglist>(dealii::Triangulation&lt; dim &gt; &amp;tria, const tria_cell_iterator&lt; dim &gt; &amp;base_cell, F &amp;is_in_neighborhood, G &amp;calculate_local_quantity, bool clear_user_flags=true)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>visit_neighbors_recursively</name>
+      <anchorfile>namespacegrid__tools.html</anchorfile>
+      <anchor>a583cca4ae5a181301ba56933833d5a79</anchor>
+      <arglist>(const tria_cell_iterator&lt; dim &gt; &amp;cell, F &amp;is_in_neighborhood, G &amp;calculate_local_quantity)</arglist>
+    </member>
+  </compound>
+</tagfile>
