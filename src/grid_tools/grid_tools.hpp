@@ -6,8 +6,10 @@
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/dofs/dof_handler.h>
 
+/** Tools to help with grid traversal, particularly in neighborhoods of cells. */
 namespace grid_tools {
    
+/** Cell iterator on a triangulation */
 template <int dim>
 using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iterator;
 
@@ -22,15 +24,16 @@ using tria_cell_iterator = typename dealii::Triangulation<dim>::active_cell_iter
  * but it clears user_flags before and after visiting the neighborhood, unless
  * users specifically request not.
  *
- * @param cell Cell which `calculate_local_quantity` is run on, and whose 
+ * @param base_cell Cell which `calculate_local_quantity` is run on, and whose 
  * neighbors are visited recursively
  *
- * @param is_in_neighborhood Function which eats a cell and returns a boolean 
- * to tell whether it satisfies criteria for being in neighborhood.
+ * @param is_in_neighborhood Function which takes a tria_cell_iterator and 
+ * returns a boolean to tell whether it satisfies criteria for being in 
+ * neighborhood. 
  * Users may construct `is_in_neighborhood` to change its internal state upon 
  * evaluation.
  *
- * @param calculate_local_quantity Function which takes the current cell and 
+ * @param calculate_local_quantity Function which takes a tria_cell_iterator and 
  * calculates some quantity.
  * Users may construct `calculate_local_quantity` to change its internal state 
  * upon evaluation.
