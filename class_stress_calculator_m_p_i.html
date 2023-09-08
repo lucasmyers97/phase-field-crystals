@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
   <meta charset="utf-8"/>
-  <title>phase-field-crystals Finite element phase-field crystal solver</title>
+  <title>StressCalculatorMPI class | phase-field-crystals Finite element phase-field crystal solver</title>
   <link href="favicon-dark.png" rel="icon" type="image/png"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <meta content="#22272e" name="theme-color"/>
@@ -37,7 +37,7 @@
         <div class="m-row">
           <ol class="m-col-t-6 m-col-m-none">
             <li><a href="namespaces.html">Namespaces</a></li>
-            <li><a href="annotated.html" id="m-navbar-current">Classes</a></li>
+            <li><a href="annotated.html">Classes</a></li>
           </ol>
           <ol class="m-col-t-6 m-col-m-none" start="3">
             <li><a class="poxy-icon repo github poxy-external" href="https://github.com/lucasmyers97/phase-field-crystals" target="_blank" title="View on GitHub"><svg id="poxy-repo-icon" version="1.1" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><path d="M25,1.23a24.37,24.37,0,0,0-7.7,47.5C18.51,49,19,48.2,19,47.56s0-2.12,0-4.15c-6.78,1.47-8.21-3.27-8.21-3.27C9.61,37.33,8,36.58,8,36.58c-2.21-1.51.17-1.48.17-1.48a5.12,5.12,0,0,1,3.73,2.51c2.17,3.72,5.7,2.65,7.09,2a5.25,5.25,0,0,1,1.55-3.26c-5.41-.61-11.1-2.7-11.1-12A9.41,9.41,0,0,1,12,17.79a8.75,8.75,0,0,1,.24-6.45s2-.66,6.7,2.49a23.1,23.1,0,0,1,12.2,0c4.66-3.15,6.7-2.49,6.7-2.49A8.75,8.75,0,0,1,38,17.79a9.41,9.41,0,0,1,2.51,6.54c0,9.36-5.7,11.42-11.13,12a5.83,5.83,0,0,1,1.65,4.51c0,3.26,0,5.89,0,6.69,0,.65.44,1.41,1.68,1.17A24.38,24.38,0,0,0,25,1.23Z" fill="currentColor"></path></svg></a></li>
@@ -55,26 +55,48 @@
   <div class="m-container m-container-inflatable">
     <div class="m-row">
       <div class="m-col-l-10 m-push-l-1">
-        <h1>Classes</h1>
-        <ul class="m-doc">
-          <li>class <a class="m-doc" href="class_stress_calculator_m_p_i.html">StressCalculatorMPI</a> <span class="m-doc">Calculates tensorial stress field associated with the phase field.</span></li>
-        </ul>
-        <script>
-        function toggle(e) {
-            e.parentElement.className = e.parentElement.className == 'm-doc-collapsible' ?
-                'm-doc-expansible' : 'm-doc-collapsible';
-            return false;
-        }
-        /* Collapse all nodes marked as such. Doing it via JS instead of
-           directly in markup so disabling it doesn't harm usability. The list
-           is somehow regenerated on every iteration and shrinks as I change
-           the classes. It's not documented anywhere and I'm not sure if this
-           is the same across browsers, so I am going backwards in that list to
-           be sure. */
-        var collapsed = document.getElementsByClassName("collapsed");
-        for(var i = collapsed.length - 1; i >= 0; --i)
-            collapsed[i].className = 'm-doc-expansible';
-        </script>
+        <h1>
+          <div class="m-doc-template">template&lt;int dim&gt;</div>
+          StressCalculatorMPI <span class="m-thin">class</span>
+        </h1>
+        <p>Calculates tensorial stress field associated with the phase field.</p>
+<p>Given a triangulation and degree of Lagrange polynomials, this class creates all of the machinery necessary for calculating the stress tensor field <svg class="m-math" style="width: 0.738em; height: 0.536em; vertical-align: -0.000em;" viewBox="0 -5.147373 7.082408 5.147373">
+<title>
+$\sigma$
+</title>
+<defs>
+<path d="M6.073225-4.507098C6.228643-4.507098 6.623163-4.507098 6.623163-4.889664C6.623163-5.152677 6.396015-5.152677 6.180822-5.152677H3.53873C1.745455-5.152677 .454296-3.156164 .454296-1.745455C.454296-.729265 1.111831 .119552 2.187796 .119552C3.598506 .119552 5.140722-1.398755 5.140722-3.19203C5.140722-3.658281 5.033126-4.112578 4.746202-4.507098H6.073225ZM2.199751-.119552C1.590037-.119552 1.147696-.585803 1.147696-1.41071C1.147696-2.12802 1.578082-4.507098 3.335492-4.507098C3.849564-4.507098 4.423412-4.25604 4.423412-3.335492C4.423412-2.917061 4.23213-1.912827 3.813699-1.219427C3.383313-.514072 2.737733-.119552 2.199751-.119552Z" id="eq1-g0-27"></path>
+</defs>
+<g id="eq1-page1">
+<use x="0" xlink:href="#eq1-g0-27" y="0"></use>
+</g>
+</svg> arising from the phase-field <svg class="m-math" style="width: 0.948em; height: 0.851em; vertical-align: -0.000em;" viewBox="0 -8.169366 9.104652 8.169366">
+<title>
+$\Psi$
+</title>
+<defs>
+<path d="M4.97335-7.244832C4.97335-7.675218 4.99726-7.81868 6.03736-7.81868H6.396015V-8.16538C6.073225-8.141469 4.913574-8.141469 4.519054-8.141469S2.964882-8.141469 2.642092-8.16538V-7.81868H3.000747C4.040847-7.81868 4.064757-7.675218 4.064757-7.244832V-1.865006C2.438854-2.259527 2.402989-4.196264 2.402989-4.94944C2.391034-6.144956 2.032379-6.635118 1.327024-6.635118H.944458C.753176-6.635118 .657534-6.635118 .657534-6.515567C.657534-6.419925 .729265-6.40797 .777086-6.396015C1.327024-6.312329 1.482441-5.810212 1.494396-4.746202C1.506351-3.036613 2.379078-1.817186 4.064757-1.590037V-.920548C4.064757-.490162 4.040847-.3467 3.000747-.3467H2.642092V0C2.964882-.02391 4.124533-.02391 4.519054-.02391S6.073225-.02391 6.396015 0V-.3467H6.03736C4.99726-.3467 4.97335-.490162 4.97335-.920548V-1.590037C7.304608-1.876961 7.591532-3.765878 7.603487-5.021171C7.603487-5.571108 7.723039-6.312329 8.308842-6.396015C8.380573-6.40797 8.452304-6.419925 8.452304-6.515567C8.452304-6.635118 8.356663-6.635118 8.16538-6.635118H7.770859C7.208966-6.635118 6.706849-6.43188 6.694894-4.794022C6.682939-3.514819 6.324284-2.175841 4.97335-1.853051V-7.244832Z" id="eq2-g0-9"></path>
+</defs>
+<g id="eq2-page1">
+<use x="0" xlink:href="#eq2-g0-9" y="0"></use>
+</g>
+</svg>. For sake of efficiency, this calculation is broken up into three steps which all have to be called initially in order to do the operation. These are:</p><ul><li>setup_dofs</li><li>calculate_mass_matrix</li><li>calculate_stress</li></ul><p>After the initial calculation, only <code>calculate_stress</code> needs to be rerun on update of <svg class="m-math" style="width: 0.948em; height: 0.851em; vertical-align: -0.000em;" viewBox="0 -8.169366 9.104652 8.169366">
+<title>
+$\Psi$
+</title>
+<defs>
+<path d="M4.97335-7.244832C4.97335-7.675218 4.99726-7.81868 6.03736-7.81868H6.396015V-8.16538C6.073225-8.141469 4.913574-8.141469 4.519054-8.141469S2.964882-8.141469 2.642092-8.16538V-7.81868H3.000747C4.040847-7.81868 4.064757-7.675218 4.064757-7.244832V-1.865006C2.438854-2.259527 2.402989-4.196264 2.402989-4.94944C2.391034-6.144956 2.032379-6.635118 1.327024-6.635118H.944458C.753176-6.635118 .657534-6.635118 .657534-6.515567C.657534-6.419925 .729265-6.40797 .777086-6.396015C1.327024-6.312329 1.482441-5.810212 1.494396-4.746202C1.506351-3.036613 2.379078-1.817186 4.064757-1.590037V-.920548C4.064757-.490162 4.040847-.3467 3.000747-.3467H2.642092V0C2.964882-.02391 4.124533-.02391 4.519054-.02391S6.073225-.02391 6.396015 0V-.3467H6.03736C4.99726-.3467 4.97335-.490162 4.97335-.920548V-1.590037C7.304608-1.876961 7.591532-3.765878 7.603487-5.021171C7.603487-5.571108 7.723039-6.312329 8.308842-6.396015C8.380573-6.40797 8.452304-6.419925 8.452304-6.515567C8.452304-6.635118 8.356663-6.635118 8.16538-6.635118H7.770859C7.208966-6.635118 6.706849-6.43188 6.694894-4.794022C6.682939-3.514819 6.324284-2.175841 4.97335-1.853051V-7.244832Z" id="eq3-g0-9"></path>
+</defs>
+<g id="eq3-page1">
+<use x="0" xlink:href="#eq3-g0-9" y="0"></use>
+</g>
+</svg>. setup_dofs needs to be rerun only if the Triangulation is modified, and calculate_mass_matrix needs to be rerun only if setup_dofs is. Typical usage is:</p><pre class="m-code"><span class="nc">StressCalculatorMPI</span> <span class="nf">stress_calculator</span><span class="p">(</span><span class="n">tria</span><span class="p">,</span> <span class="n">degree</span><span class="p">);</span>
+<span class="n">stress_calculator</span><span class="p">.</span><span class="nf">setup_dofs</span><span class="p">(</span><span class="n">mpi_communicator</span><span class="p">);</span>
+<span class="n">stress_calculator</span><span class="p">.</span><span class="nf">calculate_mass_matrix</span><span class="p">();</span>
+<span class="n">stress_calculator</span><span class="p">.</span><span class="nf">calculate_stress</span><span class="p">(</span><span class="n">mpi_communicator</span><span class="p">,</span>
+                                   <span class="n">Psi_dof_handler</span><span class="p">,</span>
+                                   <span class="n">Psi</span><span class="p">,</span>
+                                   <span class="n">eps</span><span class="p">);</span></pre>
       </div>
     </div>
   </div>

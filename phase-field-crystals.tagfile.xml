@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
 <tagfile>
+  <compound kind="class">
+    <name>StressCalculatorMPI</name>
+    <filename>class_stress_calculator_m_p_i.html</filename>
+    <templarg>dim</templarg>
+  </compound>
   <compound kind="namespace">
     <name>grid_tools</name>
     <filename>namespacegrid__tools.html</filename>
