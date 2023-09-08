@@ -3,6 +3,7 @@ ZhifeiYang/**
 build/**
 install/**
 .cache/**
+**/.ipynb_checkpoints
 
 # latex build files
 *.aux
